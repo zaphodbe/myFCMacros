@@ -50,7 +50,7 @@ from __future__ import unicode_literals
 ##################################################################################################
 #
 __Title__    = "FCCircularText"
-__Author__   = "Mario52"
+__Author__   = "Mario52/zaphodbe"
 __Version__  = "0.17b-cdc"
 __Date__     = "2020/09/28" #YYYY/MMM/DD
 
@@ -76,8 +76,11 @@ from math import sqrt, pi, sin, cos, asin, degrees, radians, tan
 from FreeCAD import Base
 import os, time, sys
 
-#Gui=FreeCADGui
+import re
+from operator import itemgetter #, attrgetter, methodcaller    # pour sort 
+
 import WebGui
+import matplotlib.font_manager
 
 #### Detect version macro ########################################### #26/09/2020
 def vesionSearch():
@@ -130,56 +133,6 @@ def sayexc(mess=''):
 import platform
 global verPython ;  verPython = sys.version_info
 
-#class ConfigManager():
-#
-#    def __init__(self,name):
-#        self.name="Plugins/"+name
-#
-#    def get(self,param,default,defaultWindows=None,defaultMac=None):
-#            global verPython
-#            os=platform.system()
-#            #os='Linux'
-#            #os='Windows'
-#            #os='Darwin'
-#            v=False
-#            if not defaultWindows:
-#                defaultWindows=default
-#            if not defaultMac:
-#                defaultMac=default
-#            if os =='Windows' :
-#                default= defaultWindows
-#            if os =='Darwin' :
-#                default= defaultMac
-#
-#            if verPython.major < 3:
-#                if default.__class__ == unicode:
-#                    default=str(default)
-##                return unicode(encoder).encode('iso-8859-1')
-#            else:
-##                encoder = str(encoder)
-##                return encoder
-#                None
-#
-#            if default.__class__ == int:
-#                v=FreeCAD.ParamGet('User parameter:'+self.name).GetInt(param)
-#                if not v:
-#                    FreeCAD.ParamGet('User parameter:'+self.name).SetInt(param,default)
-#            if default.__class__ == float:
-#                v=FreeCAD.ParamGet('User parameter:'+self.name).GetFloat(param)
-#                if not v:
-#                    FreeCAD.ParamGet('User parameter:'+self.name).SetFloat(param,default)
-#            if default.__class__ == str:
-#                v=FreeCAD.ParamGet('User parameter:'+self.name).GetString(param)
-#                if not v:
-#                    FreeCAD.ParamGet('User parameter:'+self.name).SetString(param,default)
-#            if default.__class__ == bool:
-#                v=FreeCAD.ParamGet('User parameter:'+self.name).GetBool(param)
-#                if not v:
-#                    FreeCAD.ParamGet('User parameter:'+self.name).SetBool(param,default)
-#            if not v:
-#                v=default
-#            return v
-
 global ui               ;ui = ""
 global s                ;s  = ""
 global points           ;points   = 0.0
@@ -188,30 +141,14 @@ global coor_Y           ;coor_Y   = 0.0
 global coor_Z           ;coor_Z   = 0.0
 global vec              ;vec      = 0
 
-#cm=ConfigManager("circular text")
-##PolicePath=cm.get("PolicePath","/usr/share/fonts/","C:/Windows/Fonts/ARIAL.TTF","/Library/Fonts/Arial.ttf")
-#PolicePath=cm.get("PolicePath","/usr/share/fonts/","C:/Windows/Fonts/","/Library/Fonts/")
-
 import FreeCADGui
-#Gui=FreeCADGui
 
-# pointColor
-#global red              ;red   = 1.0  # 1 = 255 [ color num x = (1/255)*x ]
-#global green            ;green = 0.0  #
-#global blue             ;blue  = 0.0  #
-
-#path#################################################################
-global path                                                          #
-#path  = FreeCAD.ConfigGet("AppHomePath")                             # path FreeCAD installation
-#path  = FreeCAD.ConfigGet("UserAppData")                             # path FreeCAD User data
-#path  = "your path"                                                  # your directory path
+#macroPath############################################################
+global macroPath                                                     #  
 param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Macro") # macro path
-path  = param.GetString("MacroPath","") + "/"                        # macro path
-path  = path.replace("\\","/")                                       # convert the "\" to "/"
-#FreeCAD.Console.PrintMessage( "Path for the icons : " + path  + "\n")# 
-######################################################################
-
-userParams = "User parameter:BaseApp/Preferences/Macros/FCMmacros/" + __Title__
+macroPath  = param.GetString("MacroPath","") + "/"                   # macro path
+macroPath  = macroPath.replace("\\","/")                             # convert the "\" to "/"
+######################################################################  
 
 indoorIcon = [
 "60 46 9 1",
@@ -542,15 +479,6 @@ axialIcon = [
 "                ",
 "                "]
 
-#### matplotlib beginAngle 1/5 #################################################################
-#import PySide2
-#from PySide2 import (QtWidgets, QtCore, QtGui)
-#from PySide2.QtWidgets import (QWidget, QApplication, QSlider, QGraphicsView, QGraphicsScene, QVBoxLayout, QStyle)
-
-import re
-import operator
-from operator import itemgetter #, attrgetter, methodcaller    # pour sort 
-
 setIconTTF = [
 "16 16 6 1",
 " 	c None",
@@ -657,17 +585,6 @@ setIconPOL = [
 "......@%++++----",
 "................"]
 
-#import glob
-#files_TTF = glob.glob(self.pathFont + "/*.TTF") 
-##################################
-import matplotlib
-import matplotlib.font_manager
-import matplotlib.font_manager as fontman
-import matplotlib.font_manager as fontconfig
-from matplotlib.font_manager import FontProperties
-#from matplotlib.ft2font import FT2Font
-##################################
-
 def createSpace(text):    # detecte majuscule et ajoute un espace devant la lettre
     # return createSpace(TexTe) = Tex Te , if createSpace(TEXTE) = TEXTE
     if text.isupper():
@@ -699,9 +616,9 @@ def family(chaine):
     return [createSpace(famille), typeCar]
 
 class MyLabelPatience():        # fenetre image d'attente de chargement
-    global path
+    global macroPath
     label = QtWidgets.QLabel()
-    label.setText("<img src=" + path + "FCCircularTextButtom.png><b><center>Wait please</center> \n\n<center>i search the fonts !\n\n</right></b>")
+    label.setText("<img src=" + macroPath + "FCCircularTextButtom.png><b><center>Wait please</center> \n\n<center>i search the fonts !\n\n</right></b>")
     ecran = FreeCADGui.getMainWindow().frameGeometry()
     xF = 250; yF = 250
     xW = (ecran.width()/2) - (xF/2)
@@ -726,11 +643,15 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-class Ui_MainWindow(object):
+class Ui_MainWindow(QWidget):
 
     def __init__(self):
-        global path
-        self.path          = path
+        super().__init__()
+
+        global macroPath
+        self.macroPath = macroPath
+
+        self.userParams = "User parameter:BaseApp/Preferences/Macros/FCMmacros/" + __Title__
 
         self.sss = None
         self.exs = None
@@ -759,7 +680,7 @@ class Ui_MainWindow(object):
                                                #####
         self.setSystemFonts        = 1         # 0 = matplotlib.font_manager.findSystemFonts("C:/", "ttf") 
                                                #     fait toutes les fontes (dans tous les dossiers et sous dossiers du DD) time !!
-                                               # 1 = fontman.findSystemFonts(self.pathFont)
+                                               # 1 = matplotlib.font_manager.findSystemFonts(self.pathFont)
                                                #     fait toutes les fontes du repertoire (et dans tous les sous dossiers) (default)
                                                #####
         self.setTextAlignement     = 0         # 0 = AlignLeft (default)
@@ -834,7 +755,7 @@ class Ui_MainWindow(object):
         ##https://matplotlib.org/_modules/matplotlib/font_manager.html
 
         if self.setSystemFonts:
-            files_All_Fonts = fontman.findSystemFonts(pathSearch)                         # fait toutes les fontes (et dans tous les sous dossiers)
+            files_All_Fonts = matplotlib.font_manager.findSystemFonts(pathSearch)                         # fait toutes les fontes (et dans tous les sous dossiers)
         else:
             files_All_Fonts = matplotlib.font_manager.findSystemFonts(pathSearch, "ttf")  # fait toutes les fontes ? ()
 
@@ -970,19 +891,23 @@ class Ui_MainWindow(object):
         self.groupBox_Main = QtWidgets.QGroupBox()
 
         self.groupBox_Text = QtWidgets.QGroupBox()
-        self.groupBox_Text.setMaximumHeight(180)
+#        self.groupBox_Text.setMaximumHeight(190)
 
         ####
-        self.textEdit = QtWidgets.QTextEdit()
-#        self.textEdit.setStyleSheet("background-color: white; color: red; ")
-        self.textEdit.textChanged.connect(self.on_textEdit_Changed)
+        self.TE_Text = QtWidgets.QTextEdit()
+#        self.TE_Text.setStyleSheet("background-color: white; color: red; ")
+        self.TE_Text.textChanged.connect(self.on_textEdit_Changed)
         ####
         self.frame_Option = QtWidgets.QFrame()
         self.frame_Option.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_Option.setFrameShadow(QtWidgets.QFrame.Plain) #Raised) Sunken
-#        self.textEdit.setMaximumHeight(100)
+#        self.TE_Text.setMaximumHeight(100)
         self.PB_Reverse = QtWidgets.QPushButton()
         self.PB_Reverse.clicked.connect(self.on_PB_Reverse)
+        self.PB_ClockArabic = QtWidgets.QPushButton()
+        self.PB_ClockArabic.clicked.connect(self.on_PB_ClockArabic)
+        self.PB_ClockRoman = QtWidgets.QPushButton()
+        self.PB_ClockRoman.clicked.connect(self.on_PB_ClockRoman)
         self.CB_Word = QtWidgets.QCheckBox(self.groupBox_Text)
         self.CB_Word.setText(_fromUtf8("Word"))
         self.CB_Word.clicked.connect(self.on_textEdit_Changed)
@@ -1012,7 +937,7 @@ class Ui_MainWindow(object):
         self.DS_Radius_Circle.setMaximum(99999999.0)
         self.DS_Radius_Circle.setValue(self.radius)
         self.DS_Radius_Circle.valueChanged.connect(self.on_DS_Radius_Circle) #connection doubleSpinBox
-        self.label_10 = QtWidgets.QLabel()
+        self.L_Radius_Circle = QtWidgets.QLabel()
 
         self.DS_Size_Character = QtWidgets.QDoubleSpinBox()
         self.DS_Size_Character.setMinimum(0.0)
@@ -1020,35 +945,35 @@ class Ui_MainWindow(object):
         self.DS_Size_Character.setSingleStep(1.0)
         self.DS_Size_Character.setValue(self.characterSize)
         self.DS_Size_Character.valueChanged.connect(self.on_DS_Size_Character) #connection doubleSpinBox
-        self.label_4 = QtWidgets.QLabel()
+        self.L_Size_Character = QtWidgets.QLabel()
 
         self.DS_Begin_Angle = QtWidgets.QDoubleSpinBox()
         self.DS_Begin_Angle.setMinimum(-360.0)
         self.DS_Begin_Angle.setMaximum(360.0)
         self.DS_Begin_Angle.setValue(self.beginAngle)
         self.DS_Begin_Angle.valueChanged.connect(self.on_DS_Begin_Angle) #connection SpinBox
-        self.label_13 = QtWidgets.QLabel()
+        self.L_Begin_Angle = QtWidgets.QLabel()
 
         self.DS_End_Angle = QtWidgets.QDoubleSpinBox()
         self.DS_End_Angle.setMinimum(-360.0)
         self.DS_End_Angle.setMaximum(360.0)
         self.DS_End_Angle.setValue(self.endAngle)
         self.DS_End_Angle.valueChanged.connect(self.on_DS_End_Angle) #connection SpinBox
-        self.label_14 = QtWidgets.QLabel()
+        self.L_End_Angle = QtWidgets.QLabel()
 
         self.DS_Correction_Angle = QtWidgets.QDoubleSpinBox()
         self.DS_Correction_Angle.setMinimum(-360.00)
         self.DS_Correction_Angle.setMaximum(360.00)
         self.DS_Correction_Angle.setValue(self.correctionAngle)
         self.DS_Correction_Angle.valueChanged.connect(self.on_DS_Correction_Angle) #connection doubleSpinBox
-        self.label_7 = QtWidgets.QLabel()
+        self.L_Correction_Angle = QtWidgets.QLabel()
 
         self.DS_Correction_Radius = QtWidgets.QDoubleSpinBox()
         self.DS_Correction_Radius.setMinimum(-99999999.0)
         self.DS_Correction_Radius.setMaximum(99999999.0)
         self.DS_Correction_Radius.setValue(self.correctionRadius)
         self.DS_Correction_Radius.valueChanged.connect(self.on_DS_Correction_Radius) #connection doubleSpinBox
-        self.label_8 = QtWidgets.QLabel()
+        self.L_Correction_Radius = QtWidgets.QLabel()
 
         self.DS_Extrude = QtWidgets.QDoubleSpinBox()
         self.DS_Extrude.setEnabled(False)
@@ -1096,8 +1021,8 @@ class Ui_MainWindow(object):
 
         self.DS_InclinaisonY = QtWidgets.QSpinBox()
         self.DS_InclinaisonY.setEnabled(False)
-        self.DS_InclinaisonY.setMinimum(-360)
-        self.DS_InclinaisonY.setMaximum(360)
+        self.DS_InclinaisonY.setMinimum(-360.0)
+        self.DS_InclinaisonY.setMaximum(360.0)
         self.DS_InclinaisonY.setValue(self.inclinaisonY)
         self.DS_InclinaisonY.valueChanged.connect(self.on_DS_InclinaisonY) #connection doubleSpinBox
 
@@ -1151,13 +1076,13 @@ class Ui_MainWindow(object):
         self.DS_Step_Of_The_Helix.setMaximum(99999999.99)
         self.DS_Step_Of_The_Helix.setValue(self.pasHelix)
         self.DS_Step_Of_The_Helix.valueChanged.connect(self.on_DS_Step_Of_The_Helix) #connection doubleSpinBox
-        self.label_12 = QtWidgets.QLabel()
+        self.L_Step_Of_The_Helix = QtWidgets.QLabel()
 
         self.DS_Number_Char_Per_Turn = QtWidgets.QSpinBox()
         self.DS_Number_Char_Per_Turn.setMaximum(99999999)
         self.DS_Number_Char_Per_Turn.setValue(self.numberCharPerTern)
         self.DS_Number_Char_Per_Turn.valueChanged.connect(self.on_DS_Number_Char_Per_Turn) #connection doubleSpinBox
-        self.label = QtWidgets.QLabel()
+        self.L_Number_Char_Per_Turn = QtWidgets.QLabel()
 
         self.DS_Base_Helix = QtWidgets.QDoubleSpinBox()
         self.DS_Base_Helix.setEnabled(False)
@@ -1165,7 +1090,7 @@ class Ui_MainWindow(object):
         self.DS_Base_Helix.setMaximum(99999999.0)
         self.DS_Base_Helix.setValue(self.baseHelix)
         self.DS_Base_Helix.valueChanged.connect(self.on_DS_Base_Helix) #connection doubleSpinBox
-        self.label_2 = QtWidgets.QLabel()
+        self.L_Base_Helix = QtWidgets.QLabel()
       
         self.DS_End_Helix = QtWidgets.QDoubleSpinBox()
         self.DS_End_Helix.setEnabled(False)
@@ -1173,7 +1098,7 @@ class Ui_MainWindow(object):
         self.DS_End_Helix.setMaximum(99999999.0)
         self.DS_End_Helix.setValue(self.endHelix)
         self.DS_End_Helix.valueChanged.connect(self.on_DS_End_Helix) #connection doubleSpinBox
-        self.label_3 = QtWidgets.QLabel()
+        self.L_End_Helix = QtWidgets.QLabel()
         ####
         self.groupBox_Clock = QtWidgets.QGroupBox()
         self.groupBox_Clock.setEnabled(False)
@@ -1183,7 +1108,7 @@ class Ui_MainWindow(object):
         self.DS_Radius_Support.setMaximum(99999999.99)
         self.DS_Radius_Support.setValue(self.radiusSupport)
         self.DS_Radius_Support.valueChanged.connect(self.on_DS_Radius_Support) #connection doubleSpinBox
-        self.label_11 = QtWidgets.QLabel()
+        self.L_Radius_Support = QtWidgets.QLabel()
 
         self.PU_Roman = QtWidgets.QPushButton()
         self.PU_Roman.setIcon(QtGui.QIcon(QtGui.QPixmap(arabicIcon))) # icone dans une variable 
@@ -1193,7 +1118,7 @@ class Ui_MainWindow(object):
         self.S_Number_Faces_Support.setMaximum(999)
         self.S_Number_Faces_Support.setValue(self.nombreFaces)
         self.S_Number_Faces_Support.valueChanged.connect(self.on_S_Number_Faces_Support) #connection SpinBox
-        self.label_5 = QtWidgets.QLabel()
+        self.L_Number_Faces_Support = QtWidgets.QLabel()
 
         self.PU_Redress = QtWidgets.QPushButton()
         self.PU_Redress.setIcon(QtGui.QIcon(QtGui.QPixmap(axialIcon))) # icone dans une variable 
@@ -1204,7 +1129,7 @@ class Ui_MainWindow(object):
         self.DS_Extrude_Support.setEnabled(False)
         self.DS_Extrude_Support.setValue(self.extrudeSupport)
         self.DS_Extrude_Support.valueChanged.connect(self.on_DS_Extrude_Support) #connection doubleSpinBox
-        self.label_6 = QtWidgets.QLabel()
+        self.L_Extrude_Support = QtWidgets.QLabel()
         ####
         self.groupBox_Path = QtWidgets.QGroupBox()
         self.groupBox_Path.setEnabled(True)
@@ -1213,30 +1138,61 @@ class Ui_MainWindow(object):
         self.frame_Path = QtWidgets.QFrame()
         self.frame_Path.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_Path.setFrameShadow(QtWidgets.QFrame.Plain) #Raised) Sunken
-        self.RB_Path_01 = QtWidgets.QRadioButton()
-        self.RB_Path_01.setChecked(self.setPathOrthogonal)
-        self.RB_Path_02 = QtWidgets.QRadioButton()
-        self.RB_Path_02.setChecked(self.setPathTangent)
+        self.RB_Path_Orthogonal = QtWidgets.QRadioButton()
+        self.RB_Path_Orthogonal.setChecked(self.setPathOrthogonal)
+        self.RB_Path_Tangental = QtWidgets.QRadioButton()
+        self.RB_Path_Tangental.setChecked(self.setPathTangent)
 
-        self.frame_Position = QtWidgets.QFrame()
-        self.frame_Position.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame_Position.setFrameShadow(QtWidgets.QFrame.Plain) #.Raised) Sunken
-        self.RB_Position_Base = QtWidgets.QRadioButton()
-        self.RB_Position_Base.setChecked(self.setPositionBase)
-        self.RB_Position_Center = QtWidgets.QRadioButton()
-        self.RB_Position_Center.setChecked(self.setPositionCenter)
-        self.RB_Position_Top = QtWidgets.QRadioButton()
-        self.RB_Position_Top.setChecked(self.setPositionTop)
+        #self.frame_Position = QtWidgets.QFrame()
+        #self.frame_Position.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        #self.frame_Position.setFrameShadow(QtWidgets.QFrame.Plain) #.Raised) Sunken
+        #self.RB_Position_Base = QtWidgets.QRadioButton()
+        #self.RB_Position_Base.setChecked(self.setPositionBase)
+        #self.RB_Position_Center = QtWidgets.QRadioButton()
+        #self.RB_Position_Center.setChecked(self.setPositionCenter)
+        #self.RB_Position_Top = QtWidgets.QRadioButton()
+        #self.RB_Position_Top.setChecked(self.setPositionTop)
 
-        self.horizontalSlider_01_Str = QtWidgets.QSlider()
-        self.horizontalSlider_01_Str.setOrientation(QtCore.Qt.Horizontal)
-        self.label_Path_01 = QtWidgets.QLabel()
-        self.horizontalSlider_02_Car = QtWidgets.QSlider()
-        self.horizontalSlider_02_Car.setOrientation(QtCore.Qt.Horizontal)
-        self.label_Path_02 = QtWidgets.QLabel()
-        self.horizontalSlider_03_Tra = QtWidgets.QSlider()
-        self.horizontalSlider_03_Tra.setOrientation(QtCore.Qt.Horizontal)
-        self.label_Path_03 = QtWidgets.QLabel()
+        self.GB_Char_Align = QtWidgets.QGroupBox()
+        self.RB_Top_Left = QtWidgets.QRadioButton()
+        self.RB_Top_Left.multipliers = [0.0, 1.0, 0.0]
+        self.RB_Top_Left.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Top_Mid = QtWidgets.QRadioButton()
+        self.RB_Top_Mid.multipliers = [0.5, 1.0, 0.0]
+        self.RB_Top_Mid.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Top_Right = QtWidgets.QRadioButton()
+        self.RB_Top_Right.multipliers = [1.0, 1.0, 0.0]
+        self.RB_Top_Right.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Mid_Left = QtWidgets.QRadioButton()
+        self.RB_Mid_Left.multipliers = [0.0, 0.5, 0.0]
+        self.RB_Mid_Left.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Mid_Mid = QtWidgets.QRadioButton()
+        self.RB_Mid_Mid.multipliers = [0.5, 0.5, 0.0]
+        self.RB_Mid_Mid.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Mid_Right = QtWidgets.QRadioButton()
+        self.RB_Mid_Right.multipliers = [1.0, 0.5, 0.0]
+        self.RB_Mid_Right.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Bot_Left = QtWidgets.QRadioButton()
+        self.RB_Bot_Left.multipliers = [0.0, 0.0, 0.0]
+        self.RB_Bot_Left.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Bot_Mid = QtWidgets.QRadioButton()
+        self.RB_Bot_Mid.multipliers = [0.5, 0.0, 0.0]
+        self.RB_Bot_Mid.toggled.connect(self.on_RB_Char_Align)
+        self.RB_Bot_Right = QtWidgets.QRadioButton()
+        self.RB_Bot_Right.multipliers = [1.0, 0.0, 0.0]
+        self.RB_Bot_Right.toggled.connect(self.on_RB_Char_Align)
+        # Default to the center of the character
+        self.RB_Mid_Mid.setChecked(True)
+
+        self.GB_Extrude_Align = QtWidgets.QGroupBox()
+        self.RB_Extrude_Back = QtWidgets.QRadioButton()
+        self.RB_Extrude_Back.toggled.connect(self.on_RB_Extrude_Align)
+        self.RB_Extrude_Middle = QtWidgets.QRadioButton()
+        self.RB_Extrude_Middle.toggled.connect(self.on_RB_Extrude_Align)
+        self.RB_Extrude_Front = QtWidgets.QRadioButton()
+        self.RB_Extrude_Front.toggled.connect(self.on_RB_Extrude_Align)
+        # Default to the back/bottom of the extrusion
+        self.RB_Extrude_Back.setChecked(True)
 
         ####
         self.groupBox_Command = QtWidgets.QGroupBox()
@@ -1293,12 +1249,14 @@ class Ui_MainWindow(object):
 #        self.groupBox_Text.setMaximumHeight(160)
 #        self.gridLayout_Texte.setSpacing(6)
         self.gridLayout_Texte.setContentsMargins(10, 10, 10, 10)
-        self.gridLayout_Texte.addWidget(self.textEdit, 0, 0, 1, 1)
+        self.gridLayout_Texte.addWidget(self.TE_Text, 0, 0, 1, 1)
         ##
         self.gridLayout_frame_Option = QtWidgets.QGridLayout(self.frame_Option)
         self.gridLayout_frame_Option.setContentsMargins(10, 10, 10, 10)
         self.gridLayout_frame_Option.addWidget(self.PB_Reverse, 0, 0, 1, 1)
-        self.gridLayout_frame_Option.addWidget(self.CB_Word, 1, 0, 1, 1)
+        self.gridLayout_frame_Option.addWidget(self.PB_ClockArabic, 1, 0, 1, 1)
+        self.gridLayout_frame_Option.addWidget(self.PB_ClockRoman, 2, 0, 1, 1)
+        self.gridLayout_frame_Option.addWidget(self.CB_Word, 3, 0, 1, 1)
         self.gridLayout_Texte.addWidget(self.frame_Option, 0, 1, 2, 1)
         ##
         self.gridLayout_Texte.addWidget(self.lineEdit_NameFile,1, 0, 1, 1)#_Font
@@ -1319,30 +1277,54 @@ class Ui_MainWindow(object):
         self.gridLayout_Choice.addWidget(self.RA_Choice_Helix, 0, 1, 1, 1)
         self.gridLayout_Choice.addWidget(self.RA_Choice_Clock, 1, 1, 1, 1)
         self.gridLayout_Choice.addWidget(self.PU_Flat, 2, 0, 1, 2)
-        self.gridLayout_Choice.addWidget(self.graphicsView, 3, 0, 1, 2)
+        #self.gridLayout_Choice.addWidget(self.graphicsView, 3, 0, 1, 2)
+
+        self.gridLayout_Char_Align = QtWidgets.QGridLayout(self.GB_Char_Align)
+        self.gridLayout_Char_Align.setContentsMargins(5, 5, 5, 5)
+        self.gridLayout_Char_Align.addWidget(self.RB_Top_Left, 0, 0, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Top_Mid, 0, 1, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Top_Right, 0, 2, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Mid_Left, 1, 0, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Mid_Mid, 1, 1, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Mid_Right, 1, 2, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Bot_Left, 2, 0, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Bot_Mid, 2, 1, 1, 1)
+        self.gridLayout_Char_Align.addWidget(self.RB_Bot_Right, 2, 2, 1, 1)
+        self.gridLayout_Choice.addWidget(self.GB_Char_Align, 3, 0, 1, 1)
+
+        self.gridLayout_Extrude_Align = QtWidgets.QGridLayout(self.GB_Extrude_Align)
+        self.gridLayout_Extrude_Align.setContentsMargins(5, 5, 5, 5)
+        self.gridLayout_Extrude_Align.addWidget(self.RB_Extrude_Front, 0, 0, 1, 1)
+        self.gridLayout_Extrude_Align.addWidget(self.RB_Extrude_Middle, 1, 0, 1, 1)
+        self.gridLayout_Extrude_Align.addWidget(self.RB_Extrude_Back, 2, 0, 1, 1)
+        self.gridLayout_Choice.addWidget(self.GB_Extrude_Align, 3, 1, 1, 1)
+
         ##
         self.gridLayout_Config.addWidget(self.DS_Radius_Circle, 0, 2, 1, 1)
-        self.gridLayout_Config.addWidget(self.label_10, 0, 3, 1, 1)
+        self.gridLayout_Config.addWidget(self.L_Radius_Circle, 0, 3, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_Size_Character, 1, 2, 1, 1)
-        self.gridLayout_Config.addWidget(self.label_4, 1, 3, 1, 1)
+        self.gridLayout_Config.addWidget(self.L_Size_Character, 1, 3, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_Begin_Angle, 2, 2, 1, 1)
-        self.gridLayout_Config.addWidget(self.label_13, 2, 3, 1, 1)
+        self.gridLayout_Config.addWidget(self.L_Begin_Angle, 2, 3, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_End_Angle, 3, 2, 1, 1)
-        self.gridLayout_Config.addWidget(self.label_14, 3, 3, 1, 1)
+        self.gridLayout_Config.addWidget(self.L_End_Angle, 3, 3, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_Correction_Angle, 4, 2, 1, 1)
-        self.gridLayout_Config.addWidget(self.label_7, 4, 3, 1, 1)
+        self.gridLayout_Config.addWidget(self.L_Correction_Angle, 4, 3, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_Correction_Radius, 5, 2, 1, 1)
-        self.gridLayout_Config.addWidget(self.label_8, 5, 3, 1, 1)
+        self.gridLayout_Config.addWidget(self.L_Correction_Radius, 5, 3, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_Extrude, 6, 2, 1, 1)
         self.gridLayout_Config.addWidget(self.CH_Extrude, 6, 3, 1, 1)
+
         self.gridLayout_Config.addWidget(self.DS_PlacementX, 7, 0, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_PlacementY, 7, 1, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_PlacementZ, 7, 2, 1, 1)
         self.gridLayout_Config.addWidget(self.CH_Sp_Placement, 7, 3, 1, 1)
+
         self.gridLayout_Config.addWidget(self.DS_InclinaisonX, 8, 0, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_InclinaisonY, 8, 1, 1, 1)
         self.gridLayout_Config.addWidget(self.DS_InclinaisonZ, 8, 2, 1, 1)
         self.gridLayout_Config.addWidget(self.CH_Sp_Inclination, 8, 3, 1, 1)
+
         self.gridLayout_2.addWidget(self.groupBox_Config, 1, 0, 1, 1)
         ####
         self.gridLayout_Helix = QtWidgets.QGridLayout(self.groupBox_Helix)
@@ -1351,13 +1333,13 @@ class Ui_MainWindow(object):
 #        self.groupBox_Helix.setMinimumHeight(110)
 #        self.gridLayout_Helix.setSpacing(6)
         self.gridLayout_Helix.addWidget(self.DS_Step_Of_The_Helix, 0, 0, 1, 1)
-        self.gridLayout_Helix.addWidget(self.label_12, 0, 1, 1, 1)
+        self.gridLayout_Helix.addWidget(self.L_Step_Of_The_Helix, 0, 1, 1, 1)
         self.gridLayout_Helix.addWidget(self.DS_Number_Char_Per_Turn, 0, 2, 1, 1)
-        self.gridLayout_Helix.addWidget(self.label, 0, 3, 1, 1)
+        self.gridLayout_Helix.addWidget(self.L_Number_Char_Per_Turn, 0, 3, 1, 1)
         self.gridLayout_Helix.addWidget(self.DS_Base_Helix, 1, 0, 1, 1)
-        self.gridLayout_Helix.addWidget(self.label_2, 1, 1, 1, 1)
+        self.gridLayout_Helix.addWidget(self.L_Base_Helix, 1, 1, 1, 1)
         self.gridLayout_Helix.addWidget(self.DS_End_Helix, 1, 2, 1, 1)
-        self.gridLayout_Helix.addWidget(self.label_3, 1, 3, 1, 1)
+        self.gridLayout_Helix.addWidget(self.L_End_Helix, 1, 3, 1, 1)
         self.gridLayout_2.addWidget(self.groupBox_Helix, 3, 0, 1, 1)
         ####
         self.gridLayout_Clock = QtWidgets.QGridLayout(self.groupBox_Clock)
@@ -1366,13 +1348,13 @@ class Ui_MainWindow(object):
 #        self.groupBox_Clock.setMinimumHeight(110)
 #        self.gridLayout_Clock.setSpacing(6)
         self.gridLayout_Clock.addWidget(self.DS_Radius_Support, 0, 0, 1, 1)
-        self.gridLayout_Clock.addWidget(self.label_11, 0, 1, 1, 1)
+        self.gridLayout_Clock.addWidget(self.L_Radius_Support, 0, 1, 1, 1)
         self.gridLayout_Clock.addWidget(self.PU_Roman, 0, 2, 1, 1)
         self.gridLayout_Clock.addWidget(self.S_Number_Faces_Support, 1, 0, 1, 1)
-        self.gridLayout_Clock.addWidget(self.label_5, 1, 1, 1, 1)
+        self.gridLayout_Clock.addWidget(self.L_Number_Faces_Support, 1, 1, 1, 1)
         self.gridLayout_Clock.addWidget(self.PU_Redress, 1, 2, 1, 1)
         self.gridLayout_Clock.addWidget(self.DS_Extrude_Support, 2, 0, 1, 1)
-        self.gridLayout_Clock.addWidget(self.label_6, 2, 1, 1, 1)
+        self.gridLayout_Clock.addWidget(self.L_Extrude_Support, 2, 1, 1, 1)
         self.gridLayout_2.addWidget(self.groupBox_Clock, 4, 0, 1, 1)
         ####
 
@@ -1383,24 +1365,17 @@ class Ui_MainWindow(object):
         ##
         self.gridLayout_frame_Path = QtWidgets.QGridLayout(self.frame_Path)
 #        self.gridLayout_frame_Path.setContentsMargins(10, 10, 10, 10)
-        self.gridLayout_frame_Path.addWidget(self.RB_Path_01, 0, 1, 1, 1)
-        self.gridLayout_frame_Path.addWidget(self.RB_Path_02, 0, 2, 1, 1)
+        self.gridLayout_frame_Path.addWidget(self.RB_Path_Orthogonal, 0, 1, 1, 1)
+        self.gridLayout_frame_Path.addWidget(self.RB_Path_Tangental, 0, 2, 1, 1)
         self.gridLayout_Path.addWidget(self.frame_Path, 0, 0, 1, 1)
         ##
-        self.gridLayout_frame_Position = QtWidgets.QGridLayout(self.frame_Position)
-#        self.gridLayout_frame_Position.setContentsMargins(10, 10, 10, 10)
-        self.gridLayout_frame_Position.addWidget(self.RB_Position_Base, 0, 0, 1, 1)
-        self.gridLayout_frame_Position.addWidget(self.RB_Position_Center, 0, 1, 1, 1)
-        self.gridLayout_frame_Position.addWidget(self.RB_Position_Top, 0, 2, 1, 1)
-        self.gridLayout_Path.addWidget(self.frame_Position, 1, 0, 1, 1)
-#        ##
-#        self.gridLayout_Path.addWidget(self.horizontalSlider_01_Str, 2, 0, 1, 1)
-#        self.gridLayout_Path.addWidget(self.label_Path_01, 2, 1, 1, 1)
-#        self.gridLayout_Path.addWidget(self.horizontalSlider_02_Car, 3, 0, 1, 1)
-#        self.gridLayout_Path.addWidget(self.label_Path_02, 3, 1, 1, 1)
-#        self.gridLayout_Path.addWidget(self.horizontalSlider_03_Tra, 4, 0, 1, 1)
-#        self.gridLayout_Path.addWidget(self.label_Path_03, 4, 1, 1, 1)
-#        ##
+        #self.gridLayout_frame_Position = QtWidgets.QGridLayout(self.frame_Position)
+        #self.gridLayout_frame_Position.addWidget(self.RB_Position_Base, 0, 0, 1, 1)
+        #self.gridLayout_frame_Position.addWidget(self.RB_Position_Center, 0, 1, 1, 1)
+        #self.gridLayout_frame_Position.addWidget(self.RB_Position_Top, 0, 2, 1, 1)
+        #self.gridLayout_Path.addWidget(self.frame_Position, 1, 0, 1, 1)
+
+        ##
         self.gridLayout_2.addWidget(self.groupBox_Path, 5, 0, 1, 1)
         ####
         self.gridLayout_Command = QtWidgets.QGridLayout(self.groupBox_Command)
@@ -1432,14 +1407,18 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowFlags(PySide2.QtCore.Qt.WindowStaysOnTopHint)                         # PySide cette fonction met la fenetre en avant
         MainWindow.setWindowTitle(_fromUtf8(__Title__))
-        MainWindow.setWindowIcon(QtGui.QIcon(_fromUtf8(self.path + "FCCircularTextButtom.png")))  # change l'icone de la fenetre principale
+        MainWindow.setWindowIcon(QtGui.QIcon(_fromUtf8(self.macroPath + "FCCircularTextButtom.png")))  # change l'icone de la fenetre principale
         self.groupBox_Main.setTitle(_fromUtf8("Ver : " + __Version__ + " : " +  __Date__) + " (rmu)")
 
         self.groupBox_Text.setTitle(_fromUtf8("Text to be displayed  ( "+str(len(self.text))+" characters )"))
-        self.textEdit.setHtml(_fromUtf8(self.text))
-        self.textEdit.setToolTip(_fromUtf8("Your text to be displayed"))
+        self.TE_Text.setHtml(_fromUtf8(self.text))
+        self.TE_Text.setToolTip(_fromUtf8("Your text to be displayed"))
         self.PB_Reverse.setText(_fromUtf8("Reverse"))
         self.PB_Reverse.setToolTip(_fromUtf8("Reverse the text edited"))
+        self.PB_ClockArabic.setText(_fromUtf8("Arabic Clock"))
+        self.PB_ClockArabic.setToolTip(_fromUtf8("Change text to arabic clock"))
+        self.PB_ClockRoman.setText(_fromUtf8("Roman Clock"))
+        self.PB_ClockRoman.setToolTip(_fromUtf8("Change text to roman numerals clock"))
         self.lineEdit_NameFile.setToolTip(_fromUtf8("(Number index / Number Fonts) Complete path and name of Font file"))
         self.PB_Help.setText(_fromUtf8("Help"))
         self.CB_Word.setText(_fromUtf8("Word"))
@@ -1466,7 +1445,7 @@ class Ui_MainWindow(object):
                                    "\t\t\t#####" + "\n"
                                    "setSystemFonts    = 1\t# 0 = matplotlib.font_manager.findSystemFonts" + "\n"
                                    "\t\t\t#   all fonts in System font" + "\n"
-                                   "\t\t\t# 1 = fontman.findSystemFonts(self.pathFont) (default)" + "\n"
+                                   "\t\t\t# 1 = matplotlib.font_manager.findSystemFonts(self.pathFont) (default)" + "\n"
                                    "\t\t\t# all fonts in all directory and sub directory" + "\n"
                                    "\t\t\t#####" + "\n"
                                    "setTextAlignement = 0\t# 0 = AlignLeft (default)" + "\n"
@@ -1488,24 +1467,24 @@ class Ui_MainWindow(object):
         self.groupBox_Config.setTitle(_fromUtf8("Configuration"))
         self.DS_Radius_Circle.setToolTip(_fromUtf8("Give the radius of circle"))
         self.DS_Radius_Circle.setSuffix(_fromUtf8(" mm"))
-        self.label_10.setText(_fromUtf8("Radius of circle"))
+        self.L_Radius_Circle.setText(_fromUtf8("Radius of circle"))
         self.DS_Size_Character.setToolTip(_fromUtf8("Size of the font"))
         self.DS_Size_Character.setSuffix(_fromUtf8(" mm"))
-        self.label_4.setText(_fromUtf8("Character size"))
+        self.L_Size_Character.setText(_fromUtf8("Character size"))
         self.DS_Begin_Angle.setToolTip(_fromUtf8("Starting text of the circle "))
         self.DS_Begin_Angle.setSuffix(_fromUtf8(" deg"))
-        self.label_13.setText(_fromUtf8("Starting angle"))
+        self.L_Begin_Angle.setText(_fromUtf8("Starting angle"))
         self.DS_End_Angle.setToolTip(_fromUtf8("End text of the circle "))
         self.DS_End_Angle.setSuffix(_fromUtf8(" deg"))
-        self.label_14.setText(_fromUtf8("Ending angle"))
+        self.L_End_Angle.setText(_fromUtf8("Ending angle"))
         self.DS_Correction_Angle.setToolTip(_fromUtf8("Correct angle for tangent the text of thr circle or give a tilt angle" + "\n"
                                                       "this option is adding to the original angle (Sp. inclination)"))
         self.DS_Correction_Angle.setSuffix(_fromUtf8(" deg"))
-        self.label_7.setText(_fromUtf8("Correction Angle"))
+        self.L_Correction_Angle.setText(_fromUtf8("Correction Angle"))
         self.DS_Correction_Radius.setToolTip(_fromUtf8("Correct of the radius (depend of correction angle)" + "\n"
                                                        "this option is adding to the original radius (Radius of circle)"))
         self.DS_Correction_Radius.setSuffix(_fromUtf8(" mm"))
-        self.label_8.setText(_fromUtf8("Correction Radius"))
+        self.L_Correction_Radius.setText(_fromUtf8("Correction Radius"))
         self.DS_Extrude.setSuffix(_fromUtf8(" mm"))
         self.DS_Extrude.setToolTip(_fromUtf8("Thickness of the extrude of character. If thickness = 0 then not extrude"))
         self.CH_Extrude.setText(_fromUtf8("Extrude Char."))
@@ -1548,24 +1527,24 @@ class Ui_MainWindow(object):
         self.groupBox_Helix.setTitle(_fromUtf8("Helix"))
         self.DS_Step_Of_The_Helix.setSuffix(_fromUtf8(" mm"))
         self.DS_Step_Of_The_Helix.setToolTip(_fromUtf8("Step of the text along the helix (min Size Caractere)"))
-        self.label_12.setText(_fromUtf8("Step of Helix"))
+        self.L_Step_Of_The_Helix.setText(_fromUtf8("Step of Helix"))
         self.DS_Number_Char_Per_Turn.setToolTip(_fromUtf8("Number of characters for one turn of helix"))
-        self.label.setText(_fromUtf8("Char. per turn"))
+        self.L_Number_Char_Per_Turn.setText(_fromUtf8("Char. per turn"))
         self.DS_Base_Helix.setToolTip(_fromUtf8("Base (begin) of helix (to activate Step of Helix must be zero)"))
         self.DS_Base_Helix.setSuffix(_fromUtf8(" mm"))
-        self.label_2.setText(_fromUtf8("Base Helix"))
+        self.L_Base_Helix.setText(_fromUtf8("Base Helix"))
         self.DS_End_Helix.setToolTip(_fromUtf8("Final height of the helix (to activate Step of Helix must be zero)"))
         self.DS_End_Helix.setSuffix(_fromUtf8(" mm"))
-        self.label_3.setText(_fromUtf8("End Helix"))
+        self.L_End_Helix.setText(_fromUtf8("End Helix"))
         ####
         self.groupBox_Clock.setTitle(_fromUtf8("Clock"))
         self.DS_Radius_Support.setSuffix(_fromUtf8(" mm"))
         self.DS_Radius_Support.setToolTip(_fromUtf8("Radius of the support the clock (By defaut : Radius of circle)"))
-        self.label_11.setText(_fromUtf8("Radius of support"))
+        self.L_Radius_Support.setText(_fromUtf8("Radius of support"))
         self.PU_Roman.setText(_fromUtf8("Mode Arabic"))
         self.PU_Roman.setToolTip(_fromUtf8("The characters is in Roman or Arabic (default)"))
         self.S_Number_Faces_Support.setToolTip(_fromUtf8("Number of side of the support 0=none, 1=circle, 2=rectangle, 3=triangle, 4=square, 5=pentagon . . . . (Thickness egal extrude)"))
-        self.label_5.setText(_fromUtf8("Support number face"))
+        self.L_Number_Faces_Support.setText(_fromUtf8("Support number face"))
         self.PU_Redress.setText(_fromUtf8("Axial"))
         self.PU_Redress.setToolTip(_fromUtf8("Click for activate the mode Redress"))
         self.DS_Extrude_Support.setToolTip(_fromUtf8("Thickness of the extrude the support." + "\n"
@@ -1575,26 +1554,56 @@ class Ui_MainWindow(object):
                                                      "if the CheckBox [Extrude Char.] is not checked" + "\n"
                                                      "the SpinBox is colored in orange for warn that the character is at the base of the support"))
         self.DS_Extrude_Support.setSuffix(_fromUtf8(" mm"))
-        self.label_6.setText(_fromUtf8("Extrude support"))
+        self.L_Extrude_Support.setText(_fromUtf8("Extrude support"))
         ####
         self.groupBox_Path.setTitle(_fromUtf8("Path"))
         self.groupBox_Path.setToolTip(_fromUtf8("The string follow the wire selected" + "\n"
                                                "The buttons Outdoor, Helix, Indoor, Clock and" + "\n"
                                                "the button Mode Stand / Flat are ignored"))
-        self.RB_Path_01.setText(_fromUtf8("Orthogonal"))
-        self.RB_Path_01.setToolTip(_fromUtf8("The character is orthogonal"))
-        self.RB_Path_02.setText(_fromUtf8("Tangent"))
-        self.RB_Path_02.setToolTip(_fromUtf8("The character is tangent on position wire selected"))
+        self.RB_Path_Orthogonal.setText(_fromUtf8("Orthogonal"))
+        self.RB_Path_Orthogonal.setToolTip(_fromUtf8("The character is orthogonal"))
+        self.RB_Path_Tangental.setText(_fromUtf8("Tangent"))
+        self.RB_Path_Tangental.setToolTip(_fromUtf8("The character is tangent on position wire selected"))
 
-        self.RB_Position_Base.setText(_fromUtf8("BB Base"))
-        self.RB_Position_Base.setToolTip(_fromUtf8("The BoundBox of the character is on Base"))
-        self.label_Path_01.setText(_fromUtf8("Rotation str"))
-        self.RB_Position_Center.setText(_fromUtf8("BB Center"))
-        self.RB_Position_Center.setToolTip(_fromUtf8("The BoundBox of the character is on Center"))
-        self.label_Path_02.setText(_fromUtf8("Rotation car"))
-        self.RB_Position_Top.setText(_fromUtf8("BB Top"))
-        self.RB_Position_Top.setToolTip(_fromUtf8("The BoundBox of the character is on Top"))
-        self.label_Path_03.setText(_fromUtf8("Translation"))
+        #self.RB_Position_Base.setText(_fromUtf8("BB Base"))
+        #self.RB_Position_Base.setToolTip(_fromUtf8("The BoundBox of the character is on Base"))
+        #self.RB_Position_Center.setText(_fromUtf8("BB Center"))
+        #self.RB_Position_Center.setToolTip(_fromUtf8("The BoundBox of the character is on Center"))
+        #self.RB_Position_Top.setText(_fromUtf8("BB Top"))
+        #self.RB_Position_Top.setToolTip(_fromUtf8("The BoundBox of the character is on Top"))
+
+        self.GB_Char_Align.setTitle(_fromUtf8("Character Alignment"))
+
+        #self.RB_Top_Left.setText(_fromUtf8("TL"))
+        self.RB_Top_Left.setToolTip(_fromUtf8("Align to character Top Left"))
+        #self.RB_Top_Mid.setText(_fromUtf8("TM"))
+        self.RB_Top_Mid.setToolTip(_fromUtf8("Align to character Top Middle"))
+        #self.RB_Top_Right.setText(_fromUtf8("TR"))
+        self.RB_Top_Right.setToolTip(_fromUtf8("Align to character Top Right"))
+
+        #self.RB_Mid_Left.setText(_fromUtf8("ML"))
+        self.RB_Mid_Left.setToolTip(_fromUtf8("Align to character Middle Left"))
+        #self.RB_Mid_Mid.setText(_fromUtf8("MM"))
+        self.RB_Mid_Mid.setToolTip(_fromUtf8("Align to character Center"))
+        #self.RB_Mid_Right.setText(_fromUtf8("MR"))
+        self.RB_Mid_Right.setToolTip(_fromUtf8("Align to character Middle Right"))
+
+        #self.RB_Bot_Left.setText(_fromUtf8("BL"))
+        self.RB_Bot_Left.setToolTip(_fromUtf8("Align to character Bottom Left"))
+        #self.RB_Bot_Mid.setText(_fromUtf8("BM"))
+        self.RB_Bot_Mid.setToolTip(_fromUtf8("Align to character Bottom Middle"))
+        #self.RB_Bot_Right.setText(_fromUtf8("BR"))
+        self.RB_Bot_Right.setToolTip(_fromUtf8("Align to character Bottom Right"))
+
+        self.GB_Extrude_Align.setTitle(_fromUtf8("Extrusion Alignment"))
+
+        self.RB_Extrude_Front.setText(_fromUtf8("Front"))
+        self.RB_Extrude_Front.setToolTip(_fromUtf8("Align to extrusion front"))
+        self.RB_Extrude_Middle.setText(_fromUtf8("Middle"))
+        self.RB_Extrude_Middle.setToolTip(_fromUtf8("Align to extrusion middle"))
+        self.RB_Extrude_Back.setText(_fromUtf8("Back"))
+        self.RB_Extrude_Back.setToolTip(_fromUtf8("Align to extrusion back"))
+
         ####
         self.groupBox_Command.setTitle(_fromUtf8("Command"))
 
@@ -1662,6 +1671,15 @@ class Ui_MainWindow(object):
         except:
             self.lineEdit_NameFile.setText("Error select another font!")
 
+    def on_RB_Char_Align(self, value):
+        if value:
+            button = self.sender()
+            self.charAlignMultipliers = button.multipliers
+
+    def on_RB_Extrude_Align(self, value):
+        if value:
+            button = self.sender()
+
     def on_lineEdit_NameFile(self):
 
         self.pathFont = self.lineEdit_NameFile.text() 
@@ -1676,7 +1694,7 @@ class Ui_MainWindow(object):
         QtCore.QObject.connect(self.comboBoxPy, QtCore.SIGNAL("currentIndexChanged(int)"), self.on_fontComboBoxPython)
 
     def on_textEdit_Changed(self):        #connection textEdit
-        self.text = self.textEdit.toPlainText()
+        self.text = self.TE_Text.toPlainText()
 
         try:
             selectedEdge = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]
@@ -1695,9 +1713,9 @@ class Ui_MainWindow(object):
 
         spaces = self.text.count(" ")
         if spaces == 1:
-            espace = "spaces"
-        else:
             espace = "space"
+        else:
+            espace = "spaces"
 
         if str(selectedEdge) != "":
             self.groupBox_Text.setTitle("Text to be displayed  ( "+str(length)+ " " + mot + " ) ( " + str(spaces) + " " + espace + " ) ( Length " + str(round(selectedEdge.Length,3)) + " mm )")
@@ -1705,10 +1723,25 @@ class Ui_MainWindow(object):
             self.groupBox_Text.setTitle("Text to be displayed  ( "+str(length)+ " " + mot + " ) ( " + str(spaces) + " " + espace + " )")
 
     def on_PB_Reverse(self):        #connection Reverse
-        self.text = self.textEdit.toPlainText()
+        self.text = self.TE_Text.toPlainText()
         self.text = self.text[::-1]
-        self.textEdit.setText(_fromUtf8(self.text))
-        self.textEdit.repaint()
+        self.TE_Text.setText(_fromUtf8(self.text))
+        self.TE_Text.repaint()
+
+    def on_PB_Clock(self,text=None):
+        if text is not None:
+            self.TE_Text.setText(_fromUtf8(text))
+            self.TE_Text.repaint()
+        self.DS_Begin_Angle.setValue(60.0)
+        self.DS_End_Angle.setValue(-270.0)
+        self.CB_Word.setChecked(True)
+        self.CB_Word.repaint()
+
+    def on_PB_ClockArabic(self):
+        self.on_PB_Clock("1 2 3 4 5 6 7 8 9 10 11 12")
+
+    def on_PB_ClockRoman(self):
+        self.on_PB_Clock("I II III IV V VI VII VIII IX X XI XII")
 
     def on_CH_Pivot_Character(self):        #connection checkBox
         if self.CH_Pivot_Character.isChecked():
@@ -1810,15 +1843,15 @@ class Ui_MainWindow(object):
 
         self.DS_Begin_Angle.setEnabled(False)
         self.DS_End_Angle.setEnabled(False)
-        self.correctionRadius = 0.0
+        #self.correctionRadius = 0.0
         self.DS_Correction_Radius.setEnabled(False)
-        self.DS_Correction_Radius.setValue(self.correctionRadius)
-        self.correctionAngle = 10.0
+        #self.DS_Correction_Radius.setValue(self.correctionRadius)
+        #self.correctionAngle = 10.0
         self.DS_Correction_Angle.setEnabled(False)
-        self.DS_Correction_Angle.setValue(self.correctionAngle)
-        self.PivotCharacter = 0.0
+        #self.DS_Correction_Angle.setValue(self.correctionAngle)
+        #self.PivotCharacter = 0.0
         self.DS_Pivot_Char.setEnabled(False)
-        self.DS_Pivot_Char.setValue(self.PivotCharacter)
+        #self.DS_Pivot_Char.setValue(self.PivotCharacter)
         self.CH_Pivot_Character.setChecked(False)
         self.groupBox_Helix.setEnabled(False)      #helix
         self.groupBox_Clock.setEnabled(True)       #clock
@@ -1972,18 +2005,18 @@ class Ui_MainWindow(object):
         self.nombreFaces = value
         self.DS_Extrude_Support.setEnabled(True)
         if self.nombreFaces == 0:
-            self.label_5.setText(_fromUtf8("Support number face"))
+            self.L_Number_Faces_Support.setText(_fromUtf8("Support number face"))
             self.DS_Extrude_Support.setEnabled(False)
         elif self.nombreFaces == 1:
-            self.label_5.setText(_fromUtf8("Support Circle"))
+            self.L_Number_Faces_Support.setText(_fromUtf8("Support Circle"))
         elif self.nombreFaces == 2:
-            self.label_5.setText(_fromUtf8("Support Rectangle"))
+            self.L_Number_Faces_Support.setText(_fromUtf8("Support Rectangle"))
         elif self.nombreFaces == 3:
-            self.label_5.setText(_fromUtf8("Support Triangle"))
+            self.L_Number_Faces_Support.setText(_fromUtf8("Support Triangle"))
         elif self.nombreFaces == 4:
-            self.label_5.setText(_fromUtf8("Support Square"))
+            self.L_Number_Faces_Support.setText(_fromUtf8("Support Square"))
         else :
-            self.label_5.setText(_fromUtf8("Support Polygone"))
+            self.L_Number_Faces_Support.setText(_fromUtf8("Support Polygone"))
 
     def on_DS_Extrude_Support(self,value):     #  Clock
         self.extrudeSupport = value
@@ -2046,7 +2079,7 @@ class Ui_MainWindow(object):
     def on_PU_Reset(self):
         self.setDefaults()
 
-        self.textEdit.setText(_fromUtf8(self.text))
+        self.TE_Text.setText(_fromUtf8(self.text))
 
         self.CB_Word.setChecked(False)
 
@@ -2090,10 +2123,12 @@ class Ui_MainWindow(object):
         self.groupBox_Clock.setEnabled(False)
         self.DS_Radius_Support.setValue(self.radiusSupport)
         self.S_Number_Faces_Support.setValue(self.nombreFaces)
-        self.label_5.setText(_fromUtf8("Support number face"))
+        self.L_Number_Faces_Support.setText(_fromUtf8("Support number face"))
         self.DS_Extrude_Support.setEnabled(False)
         self.DS_Extrude_Support.setValue(self.extrudeSupport)
         self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
+
+        self.RB_Mid_Mid.setChecked(True)
 
         self.update_Roman()
 
@@ -2155,29 +2190,43 @@ class Ui_MainWindow(object):
     
                     ss=Draft.makeShapeString(String=textData[position],FontFile=self.fontFullPath,Size=characterSize,Tracking=0)
 
-                    print("ss BoundBox", ss.Shape.BoundBox.XLength, ss.Shape.BoundBox.YLength, ss.Shape.BoundBox.ZLength)
+                    ss.Label = textData[position]
+                    Draft.autogroup(ss)
+                    FcString.addObject(ss)  # contener character
+                    self.sss.append(ss)
     
-                    XLongueur = ss.Shape.BoundBox.XLength                                          # Length x boundBox rectangle
-                    YLongueur = ss.Shape.BoundBox.YLength                                          # Length y boundBox rectangle
-                    ZLongueur = ss.Shape.BoundBox.ZLength                                          # Length z boundBox rectangle
-                    XXLongueur = 0.0
-                    YYLongueur = 0.0
-                    ZZLongueur = 0.0
+                    lengthX = ss.Shape.BoundBox.XLength
+                    lengthY = ss.Shape.BoundBox.YLength
+                    lengthZ = ss.Shape.BoundBox.ZLength
+                    centreX = lengthX * self.charAlignMultipliers[0]
+                    centreY = lengthY * self.charAlignMultipliers[1]
+                    centreZ = lengthZ * self.charAlignMultipliers[2]
+                    coor_X = points[position][0] - centreX
+                    coor_Y = points[position][1] - centreY
+                    coor_Z = points[position][2] - centreZ
+
+                    #XLongueur = ss.Shape.BoundBox.XLength                                          # Length x boundBox rectangle
+                    #YLongueur = ss.Shape.BoundBox.YLength                                          # Length y boundBox rectangle
+                    #ZLongueur = ss.Shape.BoundBox.ZLength                                          # Length z boundBox rectangle
+                    #XXLongueur = 0.0
+                    #YYLongueur = 0.0
+                    #ZZLongueur = 0.0
                 
-                    if self.RB_Position_Base.isChecked():
-                        None
-                    elif self.RB_Position_Center.isChecked():
-                        XXLongueur = -XLongueur/2.0; YYLongueur = -YLongueur/2.0; #ZZLongueur = -ZLongueur/2.0
-                    elif self.RB_Position_Top.isChecked():
-                        XXLongueur = 0; YYLongueur = -YLongueur; #ZZLongueur = -ZLongueur
+                    #if self.RB_Position_Base.isChecked():
+                    #    None
+                    #elif self.RB_Position_Center.isChecked():
+                    #    XXLongueur = -XLongueur/2.0; YYLongueur = -YLongueur/2.0; #ZZLongueur = -ZLongueur/2.0
+                    #elif self.RB_Position_Top.isChecked():
+                    #    XXLongueur = 0; YYLongueur = -YLongueur; #ZZLongueur = -ZLongueur
                 
-                    pl = FreeCAD.Placement()                                                # placement object
+                    plm = FreeCAD.Placement()                                                # placement object
+                    plm.Base=FreeCAD.Vector(coor_X,coor_Y,coor_Z)
                 
-                    if self.RB_Path_01.isChecked():
-    #                    pl.Base=FreeCAD.Vector(points[position][0] - (XXLongueur), points[position][1] - (YYLongueur), points[position][2])
-                        pl.Base=FreeCAD.Vector(points[position][0] + (XXLongueur), points[position][1] + (YYLongueur), points[position][2])
-                        pl.Rotation = FreeCAD.Rotation(inclinaisonX, inclinaisonY, inclinaisonZ)
-                        pl = pl.multiply(FreeCAD.Placement(FreeCAD.Vector(PlacementX, PlacementY, PlacementZ), FreeCAD.Rotation(0, 0, 0), FreeCAD.Vector(0,0,0)))
+                    if self.RB_Path_Orthogonal.isChecked():
+                        #plm.Base=FreeCAD.Vector(points[position][0] - (XXLongueur), points[position][1] - (YYLongueur), points[position][2])
+                        #plm.Base=FreeCAD.Vector(points[position][0] + (XXLongueur), points[position][1] + (YYLongueur), points[position][2])
+                        plm.Rotation = FreeCAD.Rotation(inclinaisonX, inclinaisonY, inclinaisonZ)
+                        plm = plm.multiply(FreeCAD.Placement(FreeCAD.Vector(PlacementX, PlacementY, PlacementZ), FreeCAD.Rotation(0, 0, 0), FreeCAD.Vector(0,0,0)))
                     else:
                         ##Extract macro_Perpendicular_To_Wire
                         if pasTab == 0:
@@ -2190,54 +2239,47 @@ class Ui_MainWindow(object):
                             v=pointsDirection[-2].sub(pointsDirection[-1])                            # avec vecteurs 1 et 2 (direction beginAngle ligne)
                             
                         r=FreeCAD.Rotation(FreeCAD.Vector(1,0,0),v)
-                        pl.Rotation.Q = r.Q
-                        pl = pl.multiply(FreeCAD.Placement(FreeCAD.Vector(0,0,0), FreeCAD.Rotation(inclinaisonX, inclinaisonY, inclinaisonZ), FreeCAD.Vector(0,0,0)))
+                        plm.Rotation.Q = r.Q
+                        plm = plm.multiply(FreeCAD.Placement(FreeCAD.Vector(0,0,0), FreeCAD.Rotation(inclinaisonX, inclinaisonY, inclinaisonZ), FreeCAD.Vector(0,0,0)))
                 
                         try:
-                            pl.Base = pointsDirection[position*10]
+                            plm.Base = pointsDirection[position*10]
                         except Exception:
-                            pl.Base = pointsDirection[-1]
-                        pl = pl.multiply(FreeCAD.Placement(FreeCAD.Vector(XXLongueur + PlacementX, YYLongueur + PlacementY, ZZLongueur + PlacementZ), FreeCAD.Rotation(correctionAngle, 0, 0), FreeCAD.Vector(0,0,0)))
-    
-                    ####
-                    if self.CB_BoundBox.isChecked():
-                        ss.ViewObject.BoundingBox = True
-                    ####
-                    ss.Label = textData[position]
-                    Draft.autogroup(ss)
-                    FcString.addObject(ss)  # contener character
-                    self.sss.append(ss)
-    
+                            plm.Base = pointsDirection[-1]
+                        plm = plm.multiply(FreeCAD.Placement(FreeCAD.Vector(centreX + PlacementX, centreY + PlacementY, centreZ + PlacementZ), FreeCAD.Rotation(correctionAngle, 0, 0), FreeCAD.Vector(0,0,0)))
                     ####
                     if self.extrude > 0:         # extrusion characrters
                         CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                        CharExtrude.Placement=pl 
                         CharExtrude.Label = textData[position]
-                        FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
+                        CharExtrude.Placement = plm 
                         try:
                             CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
                         except Exception:
                             None
-                        ####
+
                         if self.CB_BoundBox.isChecked():
                             CharExtrude.ViewObject.BoundingBox = True
 
                         CharExtrude.Solid = self.CB_Solid.isChecked()
-                        ####
+
+                        FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
+
                         comP.append(CharExtrude.Shape)
                         FcString.addObject(CharExtrude)  # contener extrude
                         self.exs.append(CharExtrude)
                     else:                 # 
-                        ss.Placement = pl
+                        ss.Placement = plm
                         ss.Support=None
                         try:
                             ss.ViewObject.DisplayMode = u"Flat Lines"
                         except Exception:
                             None
+                        if self.CB_BoundBox.isChecked():
+                            ss.ViewObject.BoundingBox = True
                         comP.append(ss.Shape)
                     ####
                     if self.CB_Points.isChecked():
-                        pointRepere = Draft.makePoint(pl.Base)
+                        pointRepere = Draft.makePoint(plm.Base)
                         pointRepere.ViewObject.PointColor = (1.0,0.,0.0)
                         pointRepere.Label = textData[position]
                         FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
@@ -2282,20 +2324,23 @@ class Ui_MainWindow(object):
                     coor_Z += self.baseHelix
             else:
                 self.numberCharPerTern = 1
-    
-            if self.exterieur == 3:         # Clock
-                FcString = doc.addObject("App::DocumentObjectGroup","FcClock")
-                if self.CB_Points.isChecked():
-                    FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_Clock")
-                nombre = 12
-                if self.roman:
-                    textData = ["I","II","III","IIII","V","VI","VII","VIII","IX","X","XI","XII"]
-                else:
-                    textData = ["1","2","3","4","5","6","7","8","9","10","11","12"]
-            else:
-                FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + textLabel)
-                if self.CB_Points.isChecked():
-                    FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + textLabel)
+
+            #if self.exterieur == 3:         # Clock
+            #    FcString = doc.addObject("App::DocumentObjectGroup","FcClock")
+            #    if self.CB_Points.isChecked():
+            #        FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_Clock")
+            #    nombre = 12
+            #    if self.roman:
+            #        textData = ["I","II","III","IIII","V","VI","VII","VIII","IX","X","XI","XII"]
+            #    else:
+            #        textData = ["1","2","3","4","5","6","7","8","9","10","11","12"]
+            #else:
+            #    FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + textLabel)
+            #    if self.CB_Points.isChecked():
+            #        FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + textLabel)
+            FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + textLabel)
+            if self.CB_Points.isChecked():
+                FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + textLabel)
 
             ####Boucle principale############################################################################
             loops = int(len(textData) / self.numberCharPerTern)
@@ -2304,7 +2349,7 @@ class Ui_MainWindow(object):
     #        if (len(text) % numberCharPerTern) != 0: # calcul number spires Helix
     #            boucler += 1
     
-            ii2 = -1
+            position = -1
             for loop in range(loops):
                 ii = -1
 
@@ -2316,56 +2361,31 @@ class Ui_MainWindow(object):
 
                 while ((self.beginAngle <= self.endAngle and angleTr < self.endAngle + angleInc) or (self.beginAngle > self.endAngle and angleTr > self.endAngle + angleInc)):
                     ii  += 1
-                    ii2 += 1
+                    position += 1
                     ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
     
                     a = ligne.End # fin de ligne
-                    coor_X = (a[0])
-                    coor_Y = (a[1])
+                    coor_X = a[0]
+                    coor_Y = a[1]
+                    coor_Z = a[2]
     
-                    if (ii < nombre) and (ii2 < len(textData)):
-                        if self.exterieur == 3:                  # clock
-                            ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr+90), FreeCAD.Vector(0,0,0))
+                    if (ii < nombre) and (position < len(textData)):    
+                        ss=Draft.makeShapeString(String=textData[position],FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
     
-                            try:
-                                a = ligne.Shape.Edges[0].Vertexes[1]                       # fin de ligne
-                            except Exception:
-                                a = ligne.End                                              # 0.19 fin de ligne
-    
-                            try:
-                                coor_X = (a.Point.x)
-                                coor_Y = (a.Point.y)
-                            except Exception:
-                                coor_X = (a.x)                                             # 0.19 fin de ligne
-                                coor_Y = (a.y)
-    
-                        ss=Draft.makeShapeString(String=textData[ii2],FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
-    
-                        #print("ss BoundBox dims  ", ss.Shape.BoundBox.XLength, ss.Shape.BoundBox.YLength, ss.Shape.BoundBox.ZLength)
-                        #print("ss BoundBox center", ss.Shape.BoundBox.Center[0], ss.Shape.BoundBox.Center[1], ss.Shape.BoundBox.Center[2])
-
-                        ss.Label = textData[ii2]
+                        ss.Label = textData[position]
                         FcString.addObject(ss)  # contener character
                         self.sss.append(ss)
-                        print("ss dictionary:",ss.__dict__)
     
-                        lengthX = (ss.Shape.BoundBox.XLength)
-                        lengthY = (ss.Shape.BoundBox.YLength)
-                        lengthZ = (ss.Shape.BoundBox.ZLength)
-
-                        if self.RB_Position_Center.isChecked():
-                            coor_X -= ss.Shape.BoundBox.Center[0]
-                            coor_Y -= ss.Shape.BoundBox.Center[1]
-                            coor_Z -= ss.Shape.BoundBox.Center[2]
-                            centreX = ss.Shape.BoundBox.Center[0]
-                            centreY = ss.Shape.BoundBox.Center[1]
-                            centreZ = ss.Shape.BoundBox.Center[2]
-                        else:
-                            centreX = 0
-                            centreY = 0
-                            centreZ = 0
+                        lengthX = ss.Shape.BoundBox.XLength
+                        lengthY = ss.Shape.BoundBox.YLength
+                        lengthZ = ss.Shape.BoundBox.ZLength
+                        centreX = lengthX * self.charAlignMultipliers[0]
+                        centreY = lengthY * self.charAlignMultipliers[1]
+                        centreZ = lengthZ * self.charAlignMultipliers[2]
+                        coor_X -= centreX
+                        coor_Y -= centreY
+                        coor_Z -= centreZ
     
-                        plm=""
                         plm=FreeCAD.Placement()
                         plm.Base=FreeCAD.Vector(coor_X,coor_Y,coor_Z)
     
@@ -2382,15 +2402,15 @@ class Ui_MainWindow(object):
                                 plm = FreeCAD.Placement(FreeCAD.Vector(coor_X,coor_Y,coor_Z), FreeCAD.Rotation(angleTr-90-self.correctionAngle+self.inclinaisonX+self.PivotCharacter,self.inclinaisonY,self.inclinaisonZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
                             elif self.exterieur == 3:  # circumferential plat (clock)
                                 if redressement == 1:
-                                    plm = FreeCAD.Placement(FreeCAD.Vector(coor_X-centreX,coor_Y-centreY,coor_Z), FreeCAD.Rotation(self.inclinaisonX+self.PivotCharacter,self.inclinaisonY,self.inclinaisonZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
+                                    plm = FreeCAD.Placement(FreeCAD.Vector(coor_X,coor_Y,coor_Z), FreeCAD.Rotation(self.inclinaisonX+self.PivotCharacter,self.inclinaisonY,self.inclinaisonZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
                                 else:
-                                    plm = FreeCAD.Placement(FreeCAD.Vector(coor_X-centreX,coor_Y-centreY,coor_Z), FreeCAD.Rotation(angleTr+self.inclinaisonX+self.PivotCharacter,self.inclinaisonY,self.inclinaisonZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
+                                    plm = FreeCAD.Placement(FreeCAD.Vector(coor_X,coor_Y,coor_Z), FreeCAD.Rotation(angleTr+self.inclinaisonX+self.PivotCharacter,self.inclinaisonY,self.inclinaisonZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
                             else:                 # interieur  (inferieur)
                                 plm = FreeCAD.Placement(FreeCAD.Vector(-coor_X,-coor_Y,-coor_Z), FreeCAD.Rotation(angleTr+90+self.correctionAngle+self.inclinaisonX+self.PivotCharacter,180+self.inclinaisonY,180+self.inclinaisonZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1   
-    
+                        ####
                         if self.extrude > 0:         # extrusion characrters
                             CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                            CharExtrude.Label = textData[ii2]
+                            CharExtrude.Label = textData[position]
                             CharExtrude.Placement=plm 
                             try:
                                 CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
@@ -2407,7 +2427,6 @@ class Ui_MainWindow(object):
                             comP.append(CharExtrude.Shape)
                             FcString.addObject(CharExtrude)  # contener extrude
                             self.exs.append(CharExtrude)
-                            print("CharExtrude dictionary:",CharExtrude.__dict__)
                         else:                 # 
                             ss.Placement=plm 
                             ss.Support=None
@@ -2422,7 +2441,7 @@ class Ui_MainWindow(object):
                         if self.CB_Points.isChecked():
                             pointRepere = Draft.makePoint(plm.Base)
                             pointRepere.ViewObject.PointColor = (1.0,0.,0.0)
-                            pointRepere.Label = textData[ii2]
+                            pointRepere.Label = textData[position]
                             FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
                             FcStringPoints.addObject(pointRepere)
                         ####    
@@ -2452,11 +2471,11 @@ class Ui_MainWindow(object):
         if self.nombreFaces > 0:                           # support clock
             pl = FreeCAD.Placement()
             if self.nombreFaces == 1:                      # circle
-                pl.Base = FreeCAD.Vector(0.0,0.0,0.0)
+                plm.Base = FreeCAD.Vector(0.0,0.0,0.0)
                 supp = Draft.makeCircle(self.radiusSupport,placement=pl,face=True,support=None)
             if self.nombreFaces == 2:                      # rectangle
                 radiusSupport = self.radiusSupport * 2
-                pl.Base = FreeCAD.Vector(-radiusSupport, (-radiusSupport / 2), 0.0)
+                plm.Base = FreeCAD.Vector(-radiusSupport, (-radiusSupport / 2), 0.0)
                 supp = Draft.makeRectangle((radiusSupport * 2), radiusSupport, placement=pl, face = True)
             if self.nombreFaces > 2:                       # polygone with number faces
                 if self.nombreFaces == 4:
@@ -2512,164 +2531,190 @@ class Ui_MainWindow(object):
         self.window.hide()
 
     def save_Settings(self):
-        global userParams
-
         print(__Title__ + ":Start save settings")
 
-        FreeCAD.ParamGet(userParams).SetString("Version",__Version__ + " (" + __Date__ + ")")
+        FreeCAD.ParamGet(self.userParams).SetString("Version",__Version__ + " (" + __Date__ + ")")
 
-        FreeCAD.ParamGet(userParams).SetBool    ("switchResetToDefaults",   self.switchResetToDefaults)
-        FreeCAD.ParamGet(userParams).SetBool    ("switchModeTextList",      self.switchModeTextList)
-        FreeCAD.ParamGet(userParams).SetBool    ("switchFontComBox",        self.switchFontComBox)
-        FreeCAD.ParamGet(userParams).SetBool    ("setSystemFonts",          self.setSystemFonts)
-        FreeCAD.ParamGet(userParams).SetInt     ("setTextAlignement",       self.setTextAlignement)
+        FreeCAD.ParamGet(self.userParams).SetBool    ("switchResetToDefaults",   self.switchResetToDefaults)
+        FreeCAD.ParamGet(self.userParams).SetBool    ("switchModeTextList",      self.switchModeTextList)
+        FreeCAD.ParamGet(self.userParams).SetBool    ("switchFontComBox",        self.switchFontComBox)
+        FreeCAD.ParamGet(self.userParams).SetBool    ("setSystemFonts",          self.setSystemFonts)
+        FreeCAD.ParamGet(self.userParams).SetInt     ("setTextAlignement",       self.setTextAlignement)
 
-        FreeCAD.ParamGet(userParams).SetString  ("fontName",                self.fontName)
+        FreeCAD.ParamGet(self.userParams).SetString  ("text",                    self.TE_Text.toPlainText())
+        FreeCAD.ParamGet(self.userParams).SetString  ("fontName",                self.fontName)
+        FreeCAD.ParamGet(self.userParams).SetBool    ("byWord",                  self.CB_Word.isChecked())
 
-        FreeCAD.ParamGet(userParams).SetBool    ("setPathOrthogonal",       self.RB_Path_01.isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("setPathTangent",          self.RB_Path_02.isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("setPositionBase",         self.RB_Position_Base.isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("setPositionCenter",       self.RB_Position_Center.isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("setPositionTop",          self.RB_Position_Top.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("setPathOrthogonal",       self.RB_Path_Orthogonal.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("setPathTangent",          self.RB_Path_Tangental.isChecked())
+        #FreeCAD.ParamGet(self.userParams).SetBool    ("setPositionBase",         self.RB_Position_Base.isChecked())
+        #FreeCAD.ParamGet(self.userParams).SetBool    ("setPositionCenter",       self.RB_Position_Center.isChecked())
+        #FreeCAD.ParamGet(self.userParams).SetBool    ("setPositionTop",          self.RB_Position_Top.isChecked())
 
-        FreeCAD.ParamGet(userParams).SetFloat   ("radius",                  self.DS_Radius_Circle.value())
-        FreeCAD.ParamGet(userParams).SetString  ("text",                    self.textEdit.toPlainText())
-        FreeCAD.ParamGet(userParams).SetFloat   ("beginAngle",              self.DS_Begin_Angle.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("endAngle",                self.DS_End_Angle.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("characterSize",           self.DS_Size_Character.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("radius",                  self.DS_Radius_Circle.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("beginAngle",              self.DS_Begin_Angle.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("endAngle",                self.DS_End_Angle.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("characterSize",           self.DS_Size_Character.value())
 
-        FreeCAD.ParamGet(userParams).SetFloat   ("correctionAngle",         self.DS_Correction_Angle.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("correctionRadius",        self.DS_Correction_Radius.value())
-        FreeCAD.ParamGet(userParams).SetInt     ("standing",                self.standing)
-        FreeCAD.ParamGet(userParams).SetInt     ("exterieur",               self.exterieur)
-        FreeCAD.ParamGet(userParams).SetFloat   ("baseHelix",               self.DS_Base_Helix.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("endHelix",                self.DS_End_Helix.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("pasHelix",                self.DS_Step_Of_The_Helix.value())
-        FreeCAD.ParamGet(userParams).SetInt     ("numberCharPerTern",       self.DS_Number_Char_Per_Turn.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("PivotCharacter",          self.DS_Pivot_Char.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("correctionAngle",         self.DS_Correction_Angle.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("correctionRadius",        self.DS_Correction_Radius.value())
+        FreeCAD.ParamGet(self.userParams).SetInt     ("standing",                self.standing)
+        FreeCAD.ParamGet(self.userParams).SetInt     ("exterieur",               self.exterieur)
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("baseHelix",               self.DS_Base_Helix.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("endHelix",                self.DS_End_Helix.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("pasHelix",                self.DS_Step_Of_The_Helix.value())
+        FreeCAD.ParamGet(self.userParams).SetInt     ("numberCharPerTern",       self.DS_Number_Char_Per_Turn.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("PivotCharacter",          self.DS_Pivot_Char.value())
 
-        FreeCAD.ParamGet(userParams).SetBool    ("setExtrude",              self.CH_Extrude.isChecked())
-        FreeCAD.ParamGet(userParams).SetFloat   ("extrude",                 self.DS_Extrude.value())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("setExtrude",              self.CH_Extrude.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("extrude",                 self.DS_Extrude.value())
 
-        FreeCAD.ParamGet(userParams).SetBool    ("setPlacement",            self.CH_Sp_Placement.isChecked())
-        FreeCAD.ParamGet(userParams).SetFloat   ("PlacementX",              self.DS_PlacementX.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("PlacementY",              self.DS_PlacementY.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("PlacementZ",              self.DS_PlacementZ.value())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("setPlacement",            self.CH_Sp_Placement.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("PlacementX",              self.DS_PlacementX.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("PlacementY",              self.DS_PlacementY.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("PlacementZ",              self.DS_PlacementZ.value())
 
-        FreeCAD.ParamGet(userParams).SetBool    ("setInclination",          self.CH_Sp_Inclination.isChecked())
-        FreeCAD.ParamGet(userParams).SetFloat   ("inclinaisonX",            self.DS_InclinaisonX.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("inclinaisonY",            self.DS_InclinaisonY.value())
-        FreeCAD.ParamGet(userParams).SetFloat   ("inclinaisonZ",            self.DS_InclinaisonZ.value())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("setInclination",          self.CH_Sp_Inclination.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinaisonX",            self.DS_InclinaisonX.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinaisonY",            self.DS_InclinaisonY.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinaisonZ",            self.DS_InclinaisonZ.value())
 
-        FreeCAD.ParamGet(userParams).SetFloat   ("radiusSupport",           self.DS_Radius_Support.value())
-        FreeCAD.ParamGet(userParams).SetInt     ("nombreFaces",             self.S_Number_Faces_Support.value())
-        FreeCAD.ParamGet(userParams).SetInt     ("roman",                   self.roman)
-        FreeCAD.ParamGet(userParams).SetInt     ("redressement",            self.redressement)
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("radiusSupport",           self.DS_Radius_Support.value())
+        FreeCAD.ParamGet(self.userParams).SetInt     ("nombreFaces",             self.S_Number_Faces_Support.value())
+        FreeCAD.ParamGet(self.userParams).SetInt     ("roman",                   self.roman)
+        FreeCAD.ParamGet(self.userParams).SetInt     ("redressement",            self.redressement)
 
-        FreeCAD.ParamGet(userParams).SetFloat   ("extrudeSupport",          self.DS_Extrude_Support.value())
-        FreeCAD.ParamGet(userParams).SetBool    ("outdoor",                 self.RA_Choice_Outdoor.isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("indoor",                  self.RA_Choice_Indoor .isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("helix",                   self.RA_Choice_Helix  .isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("clock",                   self.RA_Choice_Clock  .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("extrudeSupport",          self.DS_Extrude_Support.value())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("outdoor",                 self.RA_Choice_Outdoor.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("indoor",                  self.RA_Choice_Indoor .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("helix",                   self.RA_Choice_Helix  .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("clock",                   self.RA_Choice_Clock  .isChecked())
 
-        FreeCAD.ParamGet(userParams).SetBool    ("points",                  self.CB_Points        .isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("circle",                  self.CB_Circle        .isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("boundBox",                self.CB_BoundBox      .isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("progression",             self.CB_Progression   .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("points",                  self.CB_Points        .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("circle",                  self.CB_Circle        .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("boundBox",                self.CB_BoundBox      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("progression",             self.CB_Progression   .isChecked())
                                                                                              
-        FreeCAD.ParamGet(userParams).SetBool    ("solid",                   self.CB_Solid         .isChecked())
-        FreeCAD.ParamGet(userParams).SetBool    ("liveUpdate",              self.CB_Live_Update   .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("solid",                   self.CB_Solid         .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("liveUpdate",              self.CB_Live_Update   .isChecked())
+
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignTL",             self.RB_Top_Left      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignTM",             self.RB_Top_Mid       .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignTR",             self.RB_Top_Right     .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignML",             self.RB_Mid_Left      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignMM",             self.RB_Mid_Mid       .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignMR",             self.RB_Mid_Right     .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignBL",             self.RB_Bot_Left      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignBM",             self.RB_Bot_Mid       .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignBR",             self.RB_Bot_Right     .isChecked())
+
+        FreeCAD.ParamGet(self.userParams).SetBool    ("extrudeAlignF",           self.RB_Extrude_Front .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("extrudeAlignM",           self.RB_Extrude_Middle.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("extrudeAlignB",           self.RB_Extrude_Back  .isChecked())
 
         print(__Title__ + ":Done save settings")
 
     def load_Settings(self):
-        global userParams
-
         print(__Title__ + ":Start load settings")
 
-        prefVersion = FreeCAD.ParamGet(userParams).GetString("Version",__Version__ + " (" + __Date__ + ")")
+        prefVersion = FreeCAD.ParamGet(self.userParams).GetString("Version",__Version__ + " (" + __Date__ + ")")
 
         if prefVersion == __Version__ + " (" + __Date__ + ")":
             ###### Read Configuration if version matches begin ####
-            self.switchResetToDefaults   = FreeCAD.ParamGet(userParams).GetBool("switchResetToDefaults",    self.switchResetToDefaults)
-            self.switchModeTextList      = FreeCAD.ParamGet(userParams).GetBool("switchModeTextList",       self.switchModeTextList)
-            self.switchFontComBox        = FreeCAD.ParamGet(userParams).GetBool("switchFontComBox",         self.switchFontComBox)
-            self.setSystemFonts          = FreeCAD.ParamGet(userParams).GetBool("setSystemFonts",           self.setSystemFonts)
-            self.setTextAlignement       = FreeCAD.ParamGet(userParams).GetInt("setTextAlignement",         self.setTextAlignement)
+            self.switchResetToDefaults            = FreeCAD.ParamGet(self.userParams).GetBool("switchResetToDefaults",  self.switchResetToDefaults)
+            self.switchModeTextList               = FreeCAD.ParamGet(self.userParams).GetBool("switchModeTextList",     self.switchModeTextList)
+            self.switchFontComBox                 = FreeCAD.ParamGet(self.userParams).GetBool("switchFontComBox",       self.switchFontComBox)
+            self.setSystemFonts                   = FreeCAD.ParamGet(self.userParams).GetBool("setSystemFonts",         self.setSystemFonts)
+            self.setTextAlignement                = FreeCAD.ParamGet(self.userParams).GetInt("setTextAlignement",       self.setTextAlignement)
 
-            self.fontName                = FreeCAD.ParamGet(userParams).GetString("fontName",               self.fontName)
-            self.searchFont(self.fontDir,self.fontName)
+            self.TE_Text         .setText(_fromUtf8(FreeCAD.ParamGet(self.userParams).GetString("text",                 self.TE_Text.toPlainText())))
+            self.fontName                         = FreeCAD.ParamGet(self.userParams).GetString("fontName",             self.fontName)
+            self.searchFont(self.fontDir,self.fontName)                                                                 
+            self.CB_Word                .setChecked(FreeCAD.ParamGet(self.userParams).GetBool    ("byWord",             self.CB_Word.isChecked()))
 
-            self.RB_Path_01.setChecked(FreeCAD.ParamGet(userParams).GetBool("setPathOrthogonal",            self.RB_Path_01.isChecked()))
-            self.RB_Path_02.setChecked(FreeCAD.ParamGet(userParams).GetBool("setPathTangent",               self.RB_Path_02.isChecked()))
-            self.RB_Position_Base.setChecked(FreeCAD.ParamGet(userParams).GetBool("setPositionBase",        self.RB_Position_Base.isChecked()))
-            self.RB_Position_Center.setChecked(FreeCAD.ParamGet(userParams).GetBool("setPositionCenter",    self.RB_Position_Center.isChecked()))
-            self.RB_Position_Top.setChecked(FreeCAD.ParamGet(userParams).GetBool("setPositionTop",          self.RB_Position_Top.isChecked()))
+            self.RB_Path_Orthogonal             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("setPathOrthogonal",      self.RB_Path_Orthogonal.isChecked()))
+            self.RB_Path_Tangental             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("setPathTangent",         self.RB_Path_Tangental.isChecked()))
+            #self.RB_Position_Base.setChecked(FreeCAD.ParamGet(self.userParams).GetBool("setPositionBase",        self.RB_Position_Base.isChecked()))
+            #self.RB_Position_Center.setChecked(FreeCAD.ParamGet(self.userParams).GetBool("setPositionCenter",    self.RB_Position_Center.isChecked()))
+            #self.RB_Position_Top.setChecked(FreeCAD.ParamGet(self.userParams).GetBool("setPositionTop",          self.RB_Position_Top.isChecked()))
 
-            self.DS_Radius_Circle.setValue(FreeCAD.ParamGet(userParams).GetFloat("radius",                  self.DS_Radius_Circle.value()))
-            self.textEdit.setText(_fromUtf8(FreeCAD.ParamGet(userParams).GetString("text",                  self.textEdit.toPlainText())))
-            self.DS_Begin_Angle.setValue(FreeCAD.ParamGet(userParams).GetFloat("beginAngle",                self.DS_Begin_Angle.value()))
-            self.DS_End_Angle.setValue(FreeCAD.ParamGet(userParams).GetFloat("endAngle",                    self.DS_End_Angle.value()))
-            self.DS_Size_Character.setValue(FreeCAD.ParamGet(userParams).GetFloat("characterSize",          self.DS_Size_Character.value()))
+            self.DS_Radius_Circle       .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("radius",                self.DS_Radius_Circle.value()))
+            self.DS_Begin_Angle         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("beginAngle",            self.DS_Begin_Angle.value()))
+            self.DS_End_Angle           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endAngle",              self.DS_End_Angle.value()))
+            self.DS_Size_Character      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("characterSize",         self.DS_Size_Character.value()))
 
-            self.DS_Correction_Angle.setValue(FreeCAD.ParamGet(userParams).GetFloat("correctionAngle",      self.DS_Correction_Angle.value()))
-            self.DS_Correction_Radius.setValue(FreeCAD.ParamGet(userParams).GetFloat("correctionRadius",    self.DS_Correction_Radius.value()))
+            self.DS_Correction_Angle    .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("correctionAngle",       self.DS_Correction_Angle.value()))
+            self.DS_Correction_Radius   .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("correctionRadius",      self.DS_Correction_Radius.value()))
 
-            self.exterieur = FreeCAD.ParamGet(userParams).GetInt("exterieur",                               self.exterieur)
-            self.DS_Base_Helix.setValue(FreeCAD.ParamGet(userParams).GetFloat("baseHelix",                  self.DS_Base_Helix.value()))
-            self.DS_End_Helix.setValue(FreeCAD.ParamGet(userParams).GetFloat("endHelix",                    self.DS_End_Helix.value()))
-            self.DS_Step_Of_The_Helix.setValue(FreeCAD.ParamGet(userParams).GetFloat("pasHelix",            self.DS_Step_Of_The_Helix.value()))
-            self.DS_Number_Char_Per_Turn.setValue(FreeCAD.ParamGet(userParams).GetInt("numberCharPerTern",  self.DS_Number_Char_Per_Turn.value()))
-            self.DS_Pivot_Char.setValue(FreeCAD.ParamGet(userParams).GetFloat("PivotCharacter",             self.DS_Pivot_Char.value()))
+            self.exterieur                        = FreeCAD.ParamGet(self.userParams).GetInt("exterieur",               self.exterieur)
+            self.DS_Base_Helix          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("baseHelix",             self.DS_Base_Helix.value()))
+            self.DS_End_Helix           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endHelix",              self.DS_End_Helix.value()))
+            self.DS_Step_Of_The_Helix   .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("pasHelix",              self.DS_Step_Of_The_Helix.value()))
+            self.DS_Number_Char_Per_Turn.setValue  (FreeCAD.ParamGet(self.userParams).GetInt("numberCharPerTern",       self.DS_Number_Char_Per_Turn.value()))
+            self.DS_Pivot_Char          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("PivotCharacter",        self.DS_Pivot_Char.value()))
 
-            extrude = FreeCAD.ParamGet(userParams).GetBool("setExtrude",                                    self.CH_Extrude.isChecked())
+            extrude                               = FreeCAD.ParamGet(self.userParams).GetBool("setExtrude",             self.CH_Extrude.isChecked())
             self.CH_Extrude.setChecked(extrude)
-            self.DS_Extrude.setValue(FreeCAD.ParamGet(userParams).GetFloat("extrude",                       self.DS_Extrude.value()))
+            self.DS_Extrude             .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("extrude",               self.DS_Extrude.value()))
             self.DS_Extrude.setEnabled(extrude)
 
-            placement = FreeCAD.ParamGet(userParams).GetBool("setPlacement",                                self.CH_Sp_Placement.isChecked())
-            self.CH_Sp_Placement.setChecked(placement)
-            self.DS_PlacementX.setValue(FreeCAD.ParamGet(userParams).GetFloat("PlacementX",                 self.DS_PlacementX.value()))
-            self.DS_PlacementY.setValue(FreeCAD.ParamGet(userParams).GetFloat("PlacementY",                 self.DS_PlacementY.value()))
-            self.DS_PlacementZ.setValue(FreeCAD.ParamGet(userParams).GetFloat("PlacementZ",                 self.DS_PlacementZ.value()))
-            self.DS_PlacementX.setEnabled(placement)
-            self.DS_PlacementY.setEnabled(placement)
-            self.DS_PlacementZ.setEnabled(placement)
+            placement                             = FreeCAD.ParamGet(self.userParams).GetBool("setPlacement",           self.CH_Sp_Placement.isChecked())
+            self.CH_Sp_Placement.setChecked(placement)                                                                  
+            self.DS_PlacementX          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("PlacementX",            self.DS_PlacementX.value()))
+            self.DS_PlacementY          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("PlacementY",            self.DS_PlacementY.value()))
+            self.DS_PlacementZ          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("PlacementZ",            self.DS_PlacementZ.value()))
+            self.DS_PlacementX.setEnabled(placement)                                                                    
+            self.DS_PlacementY.setEnabled(placement)                                                                    
+            self.DS_PlacementZ.setEnabled(placement)                                                                    
 
-            inclinaison = FreeCAD.ParamGet(userParams).GetBool("setInclination",                            self.CH_Sp_Inclination.isChecked())
-            self.CH_Sp_Inclination.setChecked(inclinaison)
-            self.DS_InclinaisonX.setValue(FreeCAD.ParamGet(userParams).GetFloat("inclinaisonX",             self.DS_InclinaisonX.value()))
-            self.DS_InclinaisonY.setValue(FreeCAD.ParamGet(userParams).GetFloat("inclinaisonY",             self.DS_InclinaisonY.value()))
-            self.DS_InclinaisonZ.setValue(FreeCAD.ParamGet(userParams).GetFloat("inclinaisonZ",             self.DS_InclinaisonZ.value()))
-            self.DS_InclinaisonX.setEnabled(inclinaison)
-            self.DS_InclinaisonY.setEnabled(inclinaison)
-            self.DS_InclinaisonZ.setEnabled(inclinaison)
+            inclinaison                           = FreeCAD.ParamGet(self.userParams).GetBool("setInclination",         self.CH_Sp_Inclination.isChecked())
+            self.CH_Sp_Inclination.setChecked(inclinaison)                                                              
+            self.DS_InclinaisonX        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinaisonX",          self.DS_InclinaisonX.value()))
+            self.DS_InclinaisonY        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinaisonY",          self.DS_InclinaisonY.value()))
+            self.DS_InclinaisonZ        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinaisonZ",          self.DS_InclinaisonZ.value()))
+            self.DS_InclinaisonX.setEnabled(inclinaison)                                                                
+            self.DS_InclinaisonY.setEnabled(inclinaison)                                                                
+            self.DS_InclinaisonZ.setEnabled(inclinaison)                                                                
 
-            self.DS_Radius_Support      .setValue  (FreeCAD.ParamGet(userParams).GetFloat("radiusSupport",      self.DS_Radius_Support.value()))
-            self.S_Number_Faces_Support .setValue  (FreeCAD.ParamGet(userParams).GetInt("nombreFaces",          self.S_Number_Faces_Support.value()))
+            self.DS_Radius_Support      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("radiusSupport",         self.DS_Radius_Support.value()))
+            self.S_Number_Faces_Support .setValue  (FreeCAD.ParamGet(self.userParams).GetInt("nombreFaces",             self.S_Number_Faces_Support.value()))
 
-            self.roman                            = FreeCAD.ParamGet(userParams).GetInt("roman",                self.roman)
-            self.update_Roman()
+            self.roman                            = FreeCAD.ParamGet(self.userParams).GetInt("roman",                   self.roman)
+            self.update_Roman()                                                                                         
 
-            self.redressement                     = FreeCAD.ParamGet(userParams).GetInt("redressement",         self.redressement)
-            self.update_Redress()
+            self.redressement                     = FreeCAD.ParamGet(self.userParams).GetInt("redressement",            self.redressement)
+            self.update_Redress()                                                                                       
 
-            self.DS_Extrude_Support     .setValue  (FreeCAD.ParamGet(userParams).GetFloat("extrudeSupport",     self.DS_Extrude_Support.value()))
+            self.DS_Extrude_Support     .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("extrudeSupport",        self.DS_Extrude_Support.value()))
 
-            self.standing                         = FreeCAD.ParamGet(userParams).GetInt("standing",             self.standing)
+            self.standing                         = FreeCAD.ParamGet(self.userParams).GetInt("standing",                self.standing)
             self.update_PU_Flat()       
-            self.RA_Choice_Outdoor      .setChecked(FreeCAD.ParamGet(userParams).GetBool("outdoor",             self.RA_Choice_Outdoor  .isChecked()))
-            self.RA_Choice_Indoor       .setChecked(FreeCAD.ParamGet(userParams).GetBool("indoor",              self.RA_Choice_Indoor   .isChecked()))
-            self.RA_Choice_Helix        .setChecked(FreeCAD.ParamGet(userParams).GetBool("helix",               self.RA_Choice_Helix    .isChecked()))
-            self.RA_Choice_Clock        .setChecked(FreeCAD.ParamGet(userParams).GetBool("clock",               self.RA_Choice_Clock    .isChecked()))
+            self.RA_Choice_Outdoor      .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("outdoor",                self.RA_Choice_Outdoor  .isChecked()))
+            self.RA_Choice_Indoor       .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("indoor",                 self.RA_Choice_Indoor   .isChecked()))
+            self.RA_Choice_Helix        .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("helix",                  self.RA_Choice_Helix    .isChecked()))
+            self.RA_Choice_Clock        .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("clock",                  self.RA_Choice_Clock    .isChecked()))
 
-            self.CB_Points              .setChecked(FreeCAD.ParamGet(userParams).GetBool("points",              self.CB_Points          .isChecked()))
-            self.CB_Circle              .setChecked(FreeCAD.ParamGet(userParams).GetBool("circle",              self.CB_Circle          .isChecked()))
-            self.CB_BoundBox            .setChecked(FreeCAD.ParamGet(userParams).GetBool("boundBox",            self.CB_BoundBox        .isChecked()))
-            self.CB_Progression         .setChecked(FreeCAD.ParamGet(userParams).GetBool("progression",         self.CB_Progression     .isChecked()))
+            self.CB_Points              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("points",                 self.CB_Points          .isChecked()))
+            self.CB_Circle              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("circle",                 self.CB_Circle          .isChecked()))
+            self.CB_BoundBox            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("boundBox",               self.CB_BoundBox        .isChecked()))
+            self.CB_Progression         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("progression",            self.CB_Progression     .isChecked()))
 
-            self.CB_Solid               .setChecked(FreeCAD.ParamGet(userParams).GetBool("solid",               self.CB_Solid           .isChecked()))
-            self.CB_Live_Update         .setChecked(FreeCAD.ParamGet(userParams).GetBool("liveUpdate",          self.CB_Live_Update     .isChecked()))
+            self.CB_Solid               .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("solid",                  self.CB_Solid           .isChecked()))
+            self.CB_Live_Update         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("liveUpdate",             self.CB_Live_Update     .isChecked()))
+
+            self.RB_Top_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignTL",            self.RB_Top_Left        .isChecked()))
+            self.RB_Top_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignTM",            self.RB_Top_Mid         .isChecked()))
+            self.RB_Top_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignTR",            self.RB_Top_Right       .isChecked()))
+            self.RB_Mid_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignML",            self.RB_Mid_Left        .isChecked()))
+            self.RB_Mid_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignMM",            self.RB_Mid_Mid         .isChecked()))
+            self.RB_Mid_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignMR",            self.RB_Mid_Right       .isChecked()))
+            self.RB_Bot_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignBL",            self.RB_Bot_Left        .isChecked()))
+            self.RB_Bot_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignBM",            self.RB_Bot_Mid         .isChecked()))
+            self.RB_Bot_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignBR",            self.RB_Bot_Right       .isChecked()))
+
+            self.RB_Extrude_Front       .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("extrudeAlignF",          self.RB_Extrude_Front   .isChecked()))
+            self.RB_Extrude_Middle      .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("extrudeAlignM",          self.RB_Extrude_Middle  .isChecked()))
+            self.RB_Extrude_Back        .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("extrudeAlignB",          self.RB_Extrude_Back    .isChecked()))
 
         print(__Title__ + ":Done load settings")
 
