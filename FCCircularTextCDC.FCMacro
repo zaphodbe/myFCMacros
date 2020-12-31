@@ -326,7 +326,7 @@ resetIcon = [
 "          .++++++++.    ",
 "           ........     "]
 
-standIcon = [
+standInsideIcon = [
 "16 16 9 1",
 " 	c None",
 ".	c #010400",
@@ -354,7 +354,35 @@ standIcon = [
 "        .....   ",
 "                "]
 
-flatIcon = [
+standOutsideIcon = [
+"16 16 9 1",
+" 	c None",
+"*	c #010400",
+"+	c #28090D",
+"@	c #4C0000",
+"#	c #770000",
+"$	c #AE0000",
+"%	c #262826",
+"&	c #CB0000",
+"..	c #FD0705",
+"***********     ",
+"***********     ",
+"**  ***  **     ",
+"**  *...........",
+"    *...........",
+"    *..  ...  ..",
+"    ***  ...    ",
+"    ***  ...    ",
+"    ***  ...    ",
+"    ***  ...    ",
+"    ***  ...    ",
+"   ***** ...    ",
+"         ...    ",
+"         ...    ",
+"        .....   ",
+"                "]
+
+flatInsideIcon = [
 "16 16 9 1",
 " 	c None",
 ".	c #020400",
@@ -365,6 +393,34 @@ flatIcon = [
 "%	c #B40100",
 "&	c #E60002",
 "*	c #FE0004",
+"                ",
+"                ",
+"                ",
+"                ",
+"    **    .     ",
+"   ***   ...    ",
+"   **    ...    ",
+"  ***   ..      ",
+"  ***   ..      ",
+"  ****&#...     ",
+" *****$+.....%  ",
+" **  &.+%@...@. ",
+" **  ..#*&%@....",
+"**** ...  *&$...",
+" ***  ..   ** ..",
+"               ."]
+
+flatOutsideIcon = [
+"16 16 9 1",
+" 	c None",
+"*	c #020400",
+"+	c #2B0500",
+"@	c #620502",
+"#	c #770301",
+"$	c #970300",
+"%	c #B40100",
+"&	c #E60002",
+".	c #FE0004",
 "                ",
 "                ",
 "                ",
@@ -891,7 +947,6 @@ class Ui_MainWindow(QWidget):
         self.frame_Option = QtWidgets.QFrame()
         self.frame_Option.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_Option.setFrameShadow(QtWidgets.QFrame.Plain) #Raised) Sunken
-#        self.TE_Text.setMaximumHeight(100)
         self.PB_Reverse = QtWidgets.QPushButton()
         self.PB_Reverse.clicked.connect(self.on_PB_Reverse)
         self.PB_ClockArabic = QtWidgets.QPushButton()
@@ -924,22 +979,22 @@ class Ui_MainWindow(QWidget):
         self.GB_Presets = QtWidgets.QGroupBox()
 
         self.PB_Incl_Flat_Inside = QtWidgets.QPushButton()
-        self.PB_Incl_Flat_Inside.setIcon(QtGui.QIcon(QtGui.QPixmap(flatIcon)))
+        self.PB_Incl_Flat_Inside.setIcon(QtGui.QIcon(QtGui.QPixmap(flatInsideIcon)))
         self.PB_Incl_Flat_Inside.inclinations = [-90.0, 0.0, 0.0]
         self.PB_Incl_Flat_Inside.clicked.connect(self.on_PB_Incl)
 
         self.PB_Incl_Flat_Outside = QtWidgets.QPushButton()
-        self.PB_Incl_Flat_Outside.setIcon(QtGui.QIcon(QtGui.QPixmap(flatIcon)))
+        self.PB_Incl_Flat_Outside.setIcon(QtGui.QIcon(QtGui.QPixmap(flatOutsideIcon)))
         self.PB_Incl_Flat_Outside.inclinations = [90.0, 0.0, 0.0]
         self.PB_Incl_Flat_Outside.clicked.connect(self.on_PB_Incl)
 
         self.PB_Incl_Stand_Inside = QtWidgets.QPushButton()
-        self.PB_Incl_Stand_Inside.setIcon(QtGui.QIcon(QtGui.QPixmap(standIcon)))
+        self.PB_Incl_Stand_Inside.setIcon(QtGui.QIcon(QtGui.QPixmap(standInsideIcon)))
         self.PB_Incl_Stand_Inside.inclinations = [-90.0, 0.0, 90.0]
         self.PB_Incl_Stand_Inside.clicked.connect(self.on_PB_Incl)
 
         self.PB_Incl_Stand_Outside = QtWidgets.QPushButton()
-        self.PB_Incl_Stand_Outside.setIcon(QtGui.QIcon(QtGui.QPixmap(standIcon)))
+        self.PB_Incl_Stand_Outside.setIcon(QtGui.QIcon(QtGui.QPixmap(standOutsideIcon)))
         self.PB_Incl_Stand_Outside.inclinations = [90.0, 0.0, 90.0]
         self.PB_Incl_Stand_Outside.clicked.connect(self.on_PB_Incl)
 
@@ -976,10 +1031,13 @@ class Ui_MainWindow(QWidget):
 
         self.GB_Extrude_Align = QtWidgets.QGroupBox()
         self.RB_Extrude_Back = QtWidgets.QRadioButton()
+        self.RB_Extrude_Back.multiplier = 1.0
         self.RB_Extrude_Back.toggled.connect(self.on_RB_Extrude_Align)
         self.RB_Extrude_Middle = QtWidgets.QRadioButton()
+        self.RB_Extrude_Middle.multiplier = 0.5
         self.RB_Extrude_Middle.toggled.connect(self.on_RB_Extrude_Align)
         self.RB_Extrude_Front = QtWidgets.QRadioButton()
+        self.RB_Extrude_Front.multiplier = 0.0
         self.RB_Extrude_Front.toggled.connect(self.on_RB_Extrude_Align)
         # Default to the back/bottom of the extrusion
         self.RB_Extrude_Back.setChecked(True)
@@ -1089,22 +1147,48 @@ class Ui_MainWindow(QWidget):
 
         self.L_Inclination = QtWidgets.QLabel()
 
-        self.graphicsView = QtWidgets.QGraphicsView()
-        ####Screen Graphic BitMap
-        ##https://doc.qt.io/qtforpython/PySide2/QtCore/Qt.html
-        self.graphicsView = QtWidgets.QGraphicsView()
-        self.graphicsView.setObjectName("graphicsView")
-        self.graphicsView.setFixedSize(215,60)
-#        pic = QtGui.QPixmap(indoorIcon)    # png
-#        self.scene = QtWidgets.QGraphicsScene()
-#        self.scene.addPixmap(QtGui.QPixmap(pic))                        # png (bmp)
-#        self.graphicsView.setScene(self.scene)
-        ####Screen Graphic BitMap
-        ####
+        self.DS_Radius_Support = QtWidgets.QDoubleSpinBox()
+        self.DS_Radius_Support.setMaximum(99999999.99)
+        self.DS_Radius_Support.setEnabled(False)
+        self.DS_Radius_Support.setValue(self.radiusSupport)
+        self.DS_Radius_Support.valueChanged.connect(self.on_DS_Radius_Support) #connection doubleSpinBox
+        self.L_Radius_Support = QtWidgets.QLabel()
+
+        self.S_Number_Faces_Support = QtWidgets.QSpinBox()
+        self.S_Number_Faces_Support.setMaximum(999)
+        self.S_Number_Faces_Support.setEnabled(False)
+        self.S_Number_Faces_Support.setValue(self.nombreFaces)
+        self.S_Number_Faces_Support.valueChanged.connect(self.on_S_Number_Faces_Support) #connection SpinBox
+        self.L_Number_Faces_Support = QtWidgets.QLabel()
+
+        self.DS_Extrude_Support = QtWidgets.QDoubleSpinBox()
+        self.DS_Extrude_Support.setMinimum(-99999999.0)
+        self.DS_Extrude_Support.setMaximum(99999999.0)
+        self.DS_Extrude_Support.setEnabled(False)
+        self.DS_Extrude_Support.setValue(self.extrudeSupport)
+        self.DS_Extrude_Support.valueChanged.connect(self.on_DS_Extrude_Support) #connection doubleSpinBox
+        self.L_Extrude_Support = QtWidgets.QLabel()
+
+        self.CB_Support = QtWidgets.QCheckBox()
+        self.CB_Support.toggled.connect(self.on_CB_Support)
+
+#        self.graphicsView = QtWidgets.QGraphicsView()
+#        ####Screen Graphic BitMap
+#        ##https://doc.qt.io/qtforpython/PySide2/QtCore/Qt.html
+#        self.graphicsView = QtWidgets.QGraphicsView()
+#        self.graphicsView.setObjectName("graphicsView")
+#        self.graphicsView.setFixedSize(215,60)
+##        pic = QtGui.QPixmap(indoorIcon)    # png
+##        self.scene = QtWidgets.QGraphicsScene()
+##        self.scene.addPixmap(QtGui.QPixmap(pic))                        # png (bmp)
+##        self.graphicsView.setScene(self.scene)
+#        ####Screen Graphic BitMap
+#        ####
+
         self.GB_Helix = QtWidgets.QGroupBox()
         self.GB_Helix.setEnabled(False)
         self.GB_Helix.setCheckable(False)
-        self.GB_Helix.setVisible(False)
+        #self.GB_Helix.setVisible(False)
 
         self.DS_Step_Of_The_Helix = QtWidgets.QDoubleSpinBox()
         self.DS_Step_Of_The_Helix.setMaximum(99999999.99)
@@ -1134,40 +1218,9 @@ class Ui_MainWindow(QWidget):
         self.DS_End_Helix.valueChanged.connect(self.on_DS_End_Helix) #connection doubleSpinBox
         self.L_End_Helix = QtWidgets.QLabel()
         ####
-        self.GB_Clock = QtWidgets.QGroupBox()
-        self.GB_Clock.setEnabled(False)
-        self.GB_Clock.setVisible(False)
-
-        self.DS_Radius_Support = QtWidgets.QDoubleSpinBox()
-        self.DS_Radius_Support.setMaximum(99999999.99)
-        self.DS_Radius_Support.setValue(self.radiusSupport)
-        self.DS_Radius_Support.valueChanged.connect(self.on_DS_Radius_Support) #connection doubleSpinBox
-        self.L_Radius_Support = QtWidgets.QLabel()
-
-        self.PB_Roman = QtWidgets.QPushButton()
-        self.PB_Roman.setIcon(QtGui.QIcon(QtGui.QPixmap(arabicIcon))) # icone dans une variable 
-        self.PB_Roman.clicked.connect(self.on_PB_Roman)
-
-        self.S_Number_Faces_Support = QtWidgets.QSpinBox()
-        self.S_Number_Faces_Support.setMaximum(999)
-        self.S_Number_Faces_Support.setValue(self.nombreFaces)
-        self.S_Number_Faces_Support.valueChanged.connect(self.on_S_Number_Faces_Support) #connection SpinBox
-        self.L_Number_Faces_Support = QtWidgets.QLabel()
-
-        self.PB_Redress = QtWidgets.QPushButton()
-        self.PB_Redress.setIcon(QtGui.QIcon(QtGui.QPixmap(axialIcon))) # icone dans une variable 
-        self.PB_Redress.clicked.connect(self.on_PB_Redress)
-
-        self.DS_Extrude_Support = QtWidgets.QDoubleSpinBox()
-        self.DS_Extrude_Support.setMaximum(99999999.0)
-        self.DS_Extrude_Support.setEnabled(False)
-        self.DS_Extrude_Support.setValue(self.extrudeSupport)
-        self.DS_Extrude_Support.valueChanged.connect(self.on_DS_Extrude_Support) #connection doubleSpinBox
-        self.L_Extrude_Support = QtWidgets.QLabel()
-        ####
-        self.GB_Path = QtWidgets.QGroupBox()
-        self.GB_Path.setEnabled(True)
-        self.GB_Path.setVisible(True)
+        #self.GB_Clock = QtWidgets.QGroupBox()
+        #self.GB_Clock.setEnabled(False)
+        #self.GB_Clock.setVisible(False)
 
         ####
         self.GB_Command = QtWidgets.QGroupBox()
@@ -1296,7 +1349,14 @@ class Ui_MainWindow(QWidget):
         self.GL_Config.addWidget(self.DS_InclinationY, 8, 1, 1, 1)
         self.GL_Config.addWidget(self.DS_InclinationZ, 8, 2, 1, 1)
         self.GL_Config.addWidget(self.L_Inclination, 8, 3, 1, 1)
-        #self.GL_Config.addWidget(self.CB_Sp_Inclination, 8, 3, 1, 1)
+
+        self.GL_Config.addWidget(self.DS_Radius_Support, 9, 0, 1, 1)
+        #self.GL_Config.addWidget(self.L_Radius_Support, 9, 1, 1, 1)
+        self.GL_Config.addWidget(self.S_Number_Faces_Support, 9, 1, 1, 1)
+        #self.GL_Config.addWidget(self.L_Number_Faces_Support, 9, 1, 1, 1)
+        self.GL_Config.addWidget(self.DS_Extrude_Support, 9, 2, 1, 1)
+        #self.GL_Config.addWidget(self.L_Extrude_Support, 9, 1, 1, 1)
+        self.GL_Config.addWidget(self.CB_Support, 9, 3, 1, 1)
 
         self.GL_2.addWidget(self.GB_Config, 1, 0, 1, 1)
         ####
@@ -1315,42 +1375,20 @@ class Ui_MainWindow(QWidget):
         self.GL_Helix.addWidget(self.L_End_Helix, 1, 3, 1, 1)
         self.GL_2.addWidget(self.GB_Helix, 3, 0, 1, 1)
         ####
-        self.GL_Clock = QtWidgets.QGridLayout(self.GB_Clock)
-        self.GL_Clock.setContentsMargins(10, 10, 10, 10)
+#        self.GL_Clock = QtWidgets.QGridLayout(self.GB_Clock)
+#        self.GL_Clock.setContentsMargins(10, 10, 10, 10)
 #        self.GB_Clock.setMaximumHeight(110)
 #        self.GB_Clock.setMinimumHeight(110)
 #        self.GL_Clock.setSpacing(6)
-        self.GL_Clock.addWidget(self.DS_Radius_Support, 0, 0, 1, 1)
-        self.GL_Clock.addWidget(self.L_Radius_Support, 0, 1, 1, 1)
-        self.GL_Clock.addWidget(self.PB_Roman, 0, 2, 1, 1)
-        self.GL_Clock.addWidget(self.S_Number_Faces_Support, 1, 0, 1, 1)
-        self.GL_Clock.addWidget(self.L_Number_Faces_Support, 1, 1, 1, 1)
-        self.GL_Clock.addWidget(self.PB_Redress, 1, 2, 1, 1)
-        self.GL_Clock.addWidget(self.DS_Extrude_Support, 2, 0, 1, 1)
-        self.GL_Clock.addWidget(self.L_Extrude_Support, 2, 1, 1, 1)
-        self.GL_2.addWidget(self.GB_Clock, 4, 0, 1, 1)
+#        self.GL_Clock.addWidget(self.DS_Radius_Support, 0, 0, 1, 1)
+#        self.GL_Clock.addWidget(self.L_Radius_Support, 0, 1, 1, 1)
+#        self.GL_Clock.addWidget(self.S_Number_Faces_Support, 1, 0, 1, 1)
+#        self.GL_Clock.addWidget(self.L_Number_Faces_Support, 1, 1, 1, 1)
+#        self.GL_Clock.addWidget(self.DS_Extrude_Support, 2, 0, 1, 1)
+#        self.GL_Clock.addWidget(self.L_Extrude_Support, 2, 1, 1, 1)
+#        self.GL_2.addWidget(self.GB_Clock, 4, 0, 1, 1)
         ####
 
-        self.GL_Path = QtWidgets.QGridLayout(self.GB_Path)
-        self.GL_Path.setContentsMargins(10, 10, 10, 10)
-#        self.GB_Path.setMaximumHeight(110)
-#        self.GB_Path.setMinimumHeight(110)
-        ##
-        #self.GL_frame_Path = QtWidgets.QGridLayout(self.frame_Path)
-#        self.GL_frame_Path.setContentsMargins(10, 10, 10, 10)
-        #self.GL_frame_Path.addWidget(self.RB_Path_Orthogonal, 0, 1, 1, 1)
-        #self.GL_frame_Path.addWidget(self.RB_Path_Tangental, 0, 2, 1, 1)
-        #self.GL_Path.addWidget(self.frame_Path, 0, 0, 1, 1)
-        ##
-        #self.GL_frame_Position = QtWidgets.QGridLayout(self.frame_Position)
-        #self.GL_frame_Position.addWidget(self.RB_Position_Base, 0, 0, 1, 1)
-        #self.GL_frame_Position.addWidget(self.RB_Position_Center, 0, 1, 1, 1)
-        #self.GL_frame_Position.addWidget(self.RB_Position_Top, 0, 2, 1, 1)
-        #self.GL_Path.addWidget(self.frame_Position, 1, 0, 1, 1)
-
-        ##
-        #self.GL_2.addWidget(self.GB_Path, 5, 0, 1, 1)
-        ####
         self.GL_Command = QtWidgets.QGridLayout(self.GB_Command)
         self.GL_Command.setContentsMargins(10, 10, 10, 10)
 #        self.GB_Command.setMaximumHeight(100)
@@ -1494,21 +1532,6 @@ class Ui_MainWindow(QWidget):
         self.DS_InclinationZ.setSuffix(_fromUtf8(" deg Z"))
         self.DS_InclinationZ.setToolTip(_fromUtf8("Inclination of character around axis Z"))
         self.L_Inclination.setText(_fromUtf8("Inclination"))
-        #self.CB_Sp_Inclination.setText(_fromUtf8("Sp. inclination"))
-        #self.CB_Sp_Inclination.setToolTip(_fromUtf8("Inclination of character in the choice or alls plane "))
-        ####
-        #self.GB_Choice.setTitle(_fromUtf8("Choice"))
-        #self.RA_Choice_Outdoor.setText(_fromUtf8("Outdoor"))
-        #self.RA_Choice_Outdoor.setToolTip(_fromUtf8("Create the text on the outer face of the cylinder"))
-        #self.RA_Choice_Indoor.setText(_fromUtf8("Indoor"))
-        #self.RA_Choice_Indoor.setToolTip(_fromUtf8("Create the text on the inside of the cylinder"))
-        #self.RA_Choice_Helix.setText(_fromUtf8("Helix"))
-        #self.RA_Choice_Helix.setToolTip(_fromUtf8("Create the text in a helix"))
-        #self.RA_Choice_Clock.setText(_fromUtf8("Clock"))
-        #self.RA_Choice_Clock.setToolTip(_fromUtf8("Create the text to form a clock"))
-        #self.PB_Flat.setText(_fromUtf8("Mode Stand"))
-        #self.PB_Flat.setToolTip(_fromUtf8("Click for create the text Flat"))
-        #self.PB_Flat.update()
         ####
         self.GB_Helix.setTitle(_fromUtf8("Helix"))
         self.DS_Step_Of_The_Helix.setSuffix(_fromUtf8(" mm"))
@@ -1523,16 +1546,13 @@ class Ui_MainWindow(QWidget):
         self.DS_End_Helix.setSuffix(_fromUtf8(" mm"))
         self.L_End_Helix.setText(_fromUtf8("End Helix"))
         ####
-        self.GB_Clock.setTitle(_fromUtf8("Clock"))
+        #self.GB_Clock.setTitle(_fromUtf8("Clock"))
         self.DS_Radius_Support.setSuffix(_fromUtf8(" mm"))
         self.DS_Radius_Support.setToolTip(_fromUtf8("Radius of the support the clock (By defaut : Radius of circle)"))
         self.L_Radius_Support.setText(_fromUtf8("Radius of support"))
-        self.PB_Roman.setText(_fromUtf8("Mode Arabic"))
-        self.PB_Roman.setToolTip(_fromUtf8("The characters is in Roman or Arabic (default)"))
         self.S_Number_Faces_Support.setToolTip(_fromUtf8("Number of side of the support 0=none, 1=circle, 2=rectangle, 3=triangle, 4=square, 5=pentagon . . . . (Thickness egal extrude)"))
+        self.S_Number_Faces_Support.setSuffix(_fromUtf8(" faces"))
         self.L_Number_Faces_Support.setText(_fromUtf8("Support number face"))
-        self.PB_Redress.setText(_fromUtf8("Axial"))
-        self.PB_Redress.setToolTip(_fromUtf8("Click for activate the mode Redress"))
         self.DS_Extrude_Support.setToolTip(_fromUtf8("Thickness of the extrude the support." + "\n"
                                                      "If thickness = 0 then not extrude" + "\n"
                                                      "If thickness of support is bigger than character" + "\n"
@@ -1541,23 +1561,9 @@ class Ui_MainWindow(QWidget):
                                                      "the SpinBox is colored in orange for warn that the character is at the base of the support"))
         self.DS_Extrude_Support.setSuffix(_fromUtf8(" mm"))
         self.L_Extrude_Support.setText(_fromUtf8("Extrude support"))
+        self.CB_Support.setText(_fromUtf8("Support"))
+        self.CB_Support.setToolTip(_fromUtf8("Enable extruded support"))
         ####
-        #self.GB_Path.setTitle(_fromUtf8("Path"))
-        #self.GB_Path.setToolTip(_fromUtf8("The string follow the wire selected" + "\n"
-        #                                       "The buttons Outdoor, Helix, Indoor, Clock and" + "\n"
-        #                                       "the button Mode Stand / Flat are ignored"))
-        #self.RB_Path_Orthogonal.setText(_fromUtf8("Orthogonal"))
-        #self.RB_Path_Orthogonal.setToolTip(_fromUtf8("The character is orthogonal"))
-        #self.RB_Path_Tangental.setText(_fromUtf8("Tangent"))
-        #self.RB_Path_Tangental.setToolTip(_fromUtf8("The character is tangent on position wire selected"))
-
-        #self.RB_Position_Base.setText(_fromUtf8("BB Base"))
-        #self.RB_Position_Base.setToolTip(_fromUtf8("The BoundBox of the character is on Base"))
-        #self.RB_Position_Center.setText(_fromUtf8("BB Center"))
-        #self.RB_Position_Center.setToolTip(_fromUtf8("The BoundBox of the character is on Center"))
-        #self.RB_Position_Top.setText(_fromUtf8("BB Top"))
-        #self.RB_Position_Top.setToolTip(_fromUtf8("The BoundBox of the character is on Top"))
-
         self.GB_Char_Align.setTitle(_fromUtf8("Character Alignment"))
 
         #self.RB_Top_Left.setText(_fromUtf8("TL"))
@@ -1581,6 +1587,7 @@ class Ui_MainWindow(QWidget):
         #self.RB_Bot_Right.setText(_fromUtf8("BR"))
         self.RB_Bot_Right.setToolTip(_fromUtf8("Align to character Bottom Right"))
 
+        ####
         self.GB_Extrude_Align.setTitle(_fromUtf8("Extrusion Alignment"))
 
         self.RB_Extrude_Front.setText(_fromUtf8("Front"))
@@ -1665,6 +1672,7 @@ class Ui_MainWindow(QWidget):
     def on_RB_Extrude_Align(self, value):
         if value:
             button = self.sender()
+            self.extrudeAlignMultiplier = button.multiplier
 
     def on_lineEdit_NameFile(self):
 
@@ -1775,115 +1783,6 @@ class Ui_MainWindow(QWidget):
         self.DS_InclinationZ.setValue(self.inclinationZ)
         #self.DS_InclinationZ.setEnabled(False)
 
-    #def on_RA_Choice_Outdoor(self):           #
-    #    self.GB_Helix.setVisible(False)      #helix
-    #    self.GB_Clock.setVisible(False)      #clock
-    #    self.GB_Path.setVisible(True)      #Path
-    #    self.exterieur = 1
-    #    self.DS_Begin_Angle.setEnabled(True)
-    #    self.DS_End_Angle.setEnabled(True)
-    #    self.DS_Correction_Radius.setEnabled(True)
-    #    self.DS_Correction_Angle.setEnabled(True)
-    #    self.PB_Flat.setEnabled(True)
-    #    self.GB_Helix.setEnabled(False)      #helix
-    #    self.GB_Clock.setEnabled(False)      #clock
-    #    self.GB_Path.setEnabled(True)      #Path
-    #
-    #    self.on_PB_Reset_Placement()
-    #    self.on_PB_Reset_Inclination()
-    #
-    #def on_RA_Choice_Indoor(self):          #
-    #    self.GB_Helix.setVisible(False)      #helix
-    #    self.GB_Clock.setVisible(False)      #clock
-    #    self.GB_Path.setVisible(True)      #Path
-    #    self.exterieur = 0
-    #    self.DS_Begin_Angle.setEnabled(True)
-    #    self.DS_End_Angle.setEnabled(True)
-    #    self.DS_Correction_Radius.setEnabled(True)
-    #    self.DS_Correction_Angle.setEnabled(True)
-    #    self.PB_Flat.setEnabled(True)
-    #    self.GB_Helix.setEnabled(False)      #helix
-    #    self.GB_Clock.setEnabled(False)      #clock
-    #    self.GB_Path.setEnabled(True)      #Path
-    #
-    #    self.on_PB_Reset_Placement()
-    #    self.on_PB_Reset_Inclination()
-    #
-    #def on_RA_Choice_Helix(self):              #
-    #    self.GB_Helix.setVisible(True)       #helix
-    #    self.GB_Clock.setVisible(False)      #clock
-    #    self.GB_Path.setVisible(False)     #Path
-    #    self.exterieur = 2
-    #    self.radiusSupport = 0
-    #    self.nombreFaces = 0
-    #    self.standing = 1
-    #    self.update_PB_Flat()
-    #    self.PB_Flat.setEnabled(False)
-    #
-    #    self.DS_Begin_Angle.setEnabled(True)
-    #    self.DS_End_Angle.setEnabled(True)
-    #    self.DS_Correction_Radius.setEnabled(True)
-    #    self.DS_Correction_Angle.setEnabled(True)
-    #    self.GB_Helix.setEnabled(True)       #helix
-    #    self.GB_Clock.setEnabled(False)      #clock
-    #    self.GB_Path.setEnabled(False)     #Path
-    #
-    #    self.on_PB_Reset_Placement()
-    #    self.on_PB_Reset_Inclination()
-    #
-    #def on_RA_Choice_Clock(self):
-    #    self.GB_Helix.setVisible(False)      #helix
-    #    self.GB_Clock.setVisible(True)       #clock
-    #    self.GB_Path.setVisible(False)     #Path
-    #    self.exterieur = 3
-    #    self.standing = 0
-    #    self.update_PB_Flat()
-    #    self.PB_Flat.setEnabled(False)
-    #
-    #    self.DS_Begin_Angle.setEnabled(False)
-    #    self.DS_End_Angle.setEnabled(False)
-    #    #self.correctionRadius = 0.0
-    #    self.DS_Correction_Radius.setEnabled(False)
-    #    #self.DS_Correction_Radius.setValue(self.correctionRadius)
-    #    #self.correctionAngle = 10.0
-    #    self.DS_Correction_Angle.setEnabled(False)
-    #    #self.DS_Correction_Angle.setValue(self.correctionAngle)
-    #    #self.PivotCharacter = 0.0
-    #    self.DS_Pivot_Char.setEnabled(False)
-    #    #self.DS_Pivot_Char.setValue(self.PivotCharacter)
-    #    self.CB_Pivot_Character.setChecked(False)
-    #    self.GB_Helix.setEnabled(False)      #helix
-    #    self.GB_Clock.setEnabled(True)       #clock
-    #    self.GB_Path.setEnabled(False)     #path
-    #
-    #    self.on_PB_Reset_Placement()
-    #    self.on_PB_Reset_Inclination()
-    #
-    #def update_PB_Flat(self):
-    #    if self.standing:
-    #        self.RA_Choice_Outdoor.setText(_fromUtf8("Outdoor"))
-    #        self.RA_Choice_Indoor.setText(_fromUtf8("Indoor"))
-    #        self.PB_Flat.setText(_fromUtf8("Mode Stand"))
-    #        self.PB_Flat.setToolTip(_fromUtf8("Click for create the text Flat"))
-    #        self.PB_Flat.setIcon(QtGui.QIcon(QtGui.QPixmap(standIcon))) # icone dans une variable
-    #    else:
-    #        self.RA_Choice_Outdoor.setText(_fromUtf8("Indoor"))
-    #        self.RA_Choice_Indoor.setText(_fromUtf8("Outdoor"))
-    #        self.PB_Flat.setText(_fromUtf8("Mode Flat"))
-    #        self.PB_Flat.setToolTip(_fromUtf8("Click for create the text Stand"))
-    #        self.PB_Flat.setIcon(QtGui.QIcon(QtGui.QPixmap(flatIcon))) # icone dans une variable 
-    #
-    #    self.RA_Choice_Outdoor.repaint()
-    #    self.RA_Choice_Indoor.repaint()
-    #    self.PB_Flat.repaint()
-    #
-    #def on_PB_Flat(self):         # Flat or Stand
-    #    if self.standing == 1:
-    #        self.standing = 0
-    #    else:
-    #        self.standing = 1
-    #    self.update_PB_Flat()
-
     def on_DS_Radius_Circle(self,value):
         self.radius = value  
         self.radiusSupport = value
@@ -1919,9 +1818,19 @@ class Ui_MainWindow(QWidget):
         else:
             self.on_PB_Reset_Placement()
 
-        #if self.RA_Choice_Clock.isChecked():
-        #    self.DS_PlacementX.setEnabled(False)
-        #    self.DS_PlacementY.setEnabled(False)
+    def on_CB_Support(self,value):
+        self.DS_Radius_Support.setEnabled(value)
+        self.S_Number_Faces_Support.setEnabled(value)
+        self.DS_Extrude_Support.setEnabled(value)
+
+        if value:
+            self.DS_Extrude_Support.setValue(1.0)
+            self.DS_Radius_Support.setValue(self.DS_Radius_Circle.value())
+            self.S_Number_Faces_Support.setValue(1)
+        else:
+            self.DS_Extrude_Support.setValue(0.0)
+            self.DS_Radius_Support.setValue(0.0)
+            self.S_Number_Faces_Support.setValue(0)
 
     def on_DS_Correction_Angle(self,value):    # 
         self.correctionAngle = value
@@ -2026,61 +1935,25 @@ class Ui_MainWindow(QWidget):
 
     def on_DS_Extrude_Support(self,value):     #  Clock
         self.extrudeSupport = value
-        if self.extrudeSupport >= extrude:
-            if self.CB_Extrude.isChecked():
-                self.DS_Extrude.setStyleSheet("background-color: rgb(224, 0, 0)")
-                self.DS_Extrude_Support.setStyleSheet("background-color: rgb(224, 0, 0)")
-                self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-            else:
-                self.DS_Extrude.setStyleSheet("background-color: rgb(255, 165, 0)")
-                self.DS_Extrude_Support.setStyleSheet("background-color: rgb(255, 165, 0)")
-                self.CB_Extrude.setStyleSheet("background-color: rgb(255, 165, 0)")
-        else:
-            self.DS_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-            self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
-            self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-        if self.extrudeSupport == 0:
-            self.DS_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-            self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
-            self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-
-        self.DS_PlacementZ.setEnabled(True)
-
-    def update_Roman(self):
-        if self.roman:
-            self.PB_Roman.setText(_fromUtf8("Mode Roman"))
-            self.PB_Roman.setToolTip(_fromUtf8("Click for activate the mode Arabic"))
-            self.PB_Roman.setIcon(QtGui.QIcon(QtGui.QPixmap(romanIcon))) # icone dans une variable 
-        else:
-            self.PB_Roman.setText(_fromUtf8("Mode Arabic"))
-            self.PB_Roman.setToolTip(_fromUtf8("Click for activate the mode Roman"))
-            self.PB_Roman.setIcon(QtGui.QIcon(QtGui.QPixmap(arabicIcon))) # icone dans une variable 
-
-    def on_PB_Roman(self):                     # Roman or Arabic Clock
-        if self.roman == 1:
-            self.roman = 0
-        else:
-            self.roman = 1
-
-        self.update_Roman()
-
-    def update_Redress(self):
-        if self.redressement:
-            self.PB_Redress.setText(_fromUtf8("Redress"))
-            self.PB_Redress.setIcon(QtGui.QIcon(QtGui.QPixmap(redressIcon))) # icone dans une variable 
-            self.PB_Redress.setToolTip(_fromUtf8("Click for activate the mode Axial"))
-        else:
-            self.PB_Redress.setText(_fromUtf8("Axial"))
-            self.PB_Redress.setIcon(QtGui.QIcon(QtGui.QPixmap(axialIcon))) # icone dans une variable 
-            self.PB_Redress.setToolTip(_fromUtf8("Click for activate the mode Redress"))
-
-    def on_PB_Redress(self):                   # Redress or circumferencial Clock
-        if self.redressement == 1:
-            self.redressement = 0
-        else:
-            self.redressement = 1
-
-        self.update_Redress()
+        #if self.extrudeSupport >= extrude:
+        #    if self.CB_Extrude.isChecked():
+        #        self.DS_Extrude.setStyleSheet("background-color: rgb(224, 0, 0)")
+        #        self.DS_Extrude_Support.setStyleSheet("background-color: rgb(224, 0, 0)")
+        #        self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
+        #    else:
+        #        self.DS_Extrude.setStyleSheet("background-color: rgb(255, 165, 0)")
+        #        self.DS_Extrude_Support.setStyleSheet("background-color: rgb(255, 165, 0)")
+        #        self.CB_Extrude.setStyleSheet("background-color: rgb(255, 165, 0)")
+        #else:
+        #    self.DS_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
+        #    self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
+        #    self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
+        #if self.extrudeSupport == 0:
+        #    self.DS_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
+        #    self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
+        #    self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
+        #
+        #self.DS_PlacementZ.setEnabled(True)
 
     def on_PB_Reset(self):
         self.setDefaults()
@@ -2126,7 +1999,7 @@ class Ui_MainWindow(QWidget):
         self.DS_Step_Of_The_Helix.setValue(self.pasHelix)
         self.DS_Number_Char_Per_Turn.setValue(self.numberCharPerTern)
 
-        self.GB_Clock.setEnabled(False)
+        #self.GB_Clock.setEnabled(False)
         self.DS_Radius_Support.setValue(self.radiusSupport)
         self.S_Number_Faces_Support.setValue(self.nombreFaces)
         self.L_Number_Faces_Support.setText(_fromUtf8("Support number face"))
@@ -2355,21 +2228,19 @@ class Ui_MainWindow(QWidget):
     
                         ss.Label = textData[position]
                         Draft.autogroup(ss)
-                        FcString.addObject(ss)  # contener character
-                        self.sss.append(ss)
     
-                        lengthX = ss.Shape.BoundBox.XLength
-                        lengthY = ss.Shape.BoundBox.YLength
-                        lengthZ = ss.Shape.BoundBox.ZLength
-                        centreX = lengthX * self.charAlignMultipliers[0]
-                        centreY = lengthY * self.charAlignMultipliers[1]
-                        centreZ = lengthZ * self.charAlignMultipliers[2]
-                        coorX  -= centreX
-                        coorY  -= centreY
-                        coorZ  -= centreZ
-                        rotX    = self.inclinationX
-                        rotY    = self.inclinationY
-                        rotZ    = self.inclinationZ
+                        lengthX  = ss.Shape.BoundBox.XLength
+                        lengthY  = ss.Shape.BoundBox.YLength
+                        lengthZ  = ss.Shape.BoundBox.ZLength
+                        centreX  = lengthX * self.charAlignMultipliers[0]
+                        centreY  = lengthY * self.charAlignMultipliers[1]
+                        centreZ  = lengthZ * self.charAlignMultipliers[2]
+                        coorX   -= centreX
+                        coorY   -= centreY
+                        coorZ   -= centreZ
+                        rotX     = self.inclinationX
+                        rotY     = self.inclinationY
+                        rotZ     = self.inclinationZ
 
                         if not self.CB_Fixed_Angle.isChecked():
                             rotX += angleTr
@@ -2377,10 +2248,15 @@ class Ui_MainWindow(QWidget):
                         plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
 
                         ####
-                        if self.extrude > 0:         # extrusion characrters
+                        if self.extrude != 0:         # extrusion characrters
+                            extrudeUp = self.extrude * self.extrudeAlignMultiplier
+                            extrudeDn = self.extrude - extrudeUp
+
                             CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
+                            CharExtrude.LengthFwd = extrudeUp
+                            CharExtrude.LengthRev = extrudeDn
                             CharExtrude.Label = textData[position]
-                            CharExtrude.Placement=plm 
+                            CharExtrude.Placement = plm 
                             try:
                                 CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
                             except Exception:
@@ -2403,9 +2279,13 @@ class Ui_MainWindow(QWidget):
                                 ss.ViewObject.DisplayMode = u"Flat Lines"
                             except Exception:
                                 None
+
                             if self.CB_BoundBox.isChecked():
                                 ss.ViewObject.BoundingBox = True
+
                             comP.append(ss.Shape)
+                            FcString.addObject(ss)  # contener character
+                            self.sss.append(ss)
                         ####
                         if self.CB_Points.isChecked():
                             pointRepere = Draft.makePoint(plm.Base)
@@ -2438,21 +2318,21 @@ class Ui_MainWindow(QWidget):
 
         ####Extrude support clock#############################################
         if self.nombreFaces > 0:                           # support clock
-            pl = FreeCAD.Placement()
+            plm = FreeCAD.Placement()
             if self.nombreFaces == 1:                      # circle
                 plm.Base = FreeCAD.Vector(0.0,0.0,0.0)
-                supp = Draft.makeCircle(self.radiusSupport,placement=pl,face=True,support=None)
+                supp = Draft.makeCircle(self.radiusSupport,placement=plm,face=True,support=None)
             if self.nombreFaces == 2:                      # rectangle
                 radiusSupport = self.radiusSupport * 2
                 plm.Base = FreeCAD.Vector(-radiusSupport, (-radiusSupport / 2), 0.0)
-                supp = Draft.makeRectangle((radiusSupport * 2), radiusSupport, placement=pl, face = True)
+                supp = Draft.makeRectangle((radiusSupport * 2), radiusSupport, placement=plm, face = True)
             if self.nombreFaces > 2:                       # polygone with number faces
                 if self.nombreFaces == 4:
                     rotateSupport = 45
                 else:
                     rotateSupport = 90
                 pl = FreeCAD.Placement(FreeCAD.Vector(0.0,0.0,0.0), FreeCAD.Rotation(rotateSupport,0,0), FreeCAD.Vector(0,0,0))
-                supp = Draft.makePolygon(self.nombreFaces,self.radiusSupport,inscribed = False,placement = pl,face = True,support=None)
+                supp = Draft.makePolygon(self.nombreFaces,self.radiusSupport,inscribed = False,placement = plm,face = True,support=None)
 
             supp.MakeFace = True
             FreeCAD.activeDocument().recompute()
@@ -2542,11 +2422,9 @@ class Ui_MainWindow(QWidget):
         FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinationY",            self.DS_InclinationY.value())
         FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinationZ",            self.DS_InclinationZ.value())
 
+        FreeCAD.ParamGet(self.userParams).SetBool    ("support",                 self.CB_Support.isChecked())
         FreeCAD.ParamGet(self.userParams).SetFloat   ("radiusSupport",           self.DS_Radius_Support.value())
         FreeCAD.ParamGet(self.userParams).SetInt     ("nombreFaces",             self.S_Number_Faces_Support.value())
-        FreeCAD.ParamGet(self.userParams).SetInt     ("roman",                   self.roman)
-        FreeCAD.ParamGet(self.userParams).SetInt     ("redressement",            self.redressement)
-
         FreeCAD.ParamGet(self.userParams).SetFloat   ("extrudeSupport",          self.DS_Extrude_Support.value())
 
         FreeCAD.ParamGet(self.userParams).SetBool    ("points",                  self.CB_Points        .isChecked())
@@ -2631,16 +2509,14 @@ class Ui_MainWindow(QWidget):
             self.DS_InclinationY        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinationY",          self.DS_InclinationY.value()))
             self.DS_InclinationZ        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinationZ",          self.DS_InclinationZ.value()))
 
+            support                               = FreeCAD.ParamGet(self.userParams).GetBool("support",                self.CB_Support.isChecked())
+            self.CB_Support.setChecked(support)
             self.DS_Radius_Support      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("radiusSupport",         self.DS_Radius_Support.value()))
             self.S_Number_Faces_Support .setValue  (FreeCAD.ParamGet(self.userParams).GetInt("nombreFaces",             self.S_Number_Faces_Support.value()))
-
-            self.roman                            = FreeCAD.ParamGet(self.userParams).GetInt("roman",                   self.roman)
-            self.update_Roman()                                                                                         
-
-            self.redressement                     = FreeCAD.ParamGet(self.userParams).GetInt("redressement",            self.redressement)
-            self.update_Redress()                                                                                       
-
             self.DS_Extrude_Support     .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("extrudeSupport",        self.DS_Extrude_Support.value()))
+            self.DS_Radius_Support.setEnabled(support)
+            self.S_Number_Faces_Support.setEnabled(support)
+            self.DS_Extrude_Support.setEnabled(support)
 
             self.CB_Points              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("points",                 self.CB_Points          .isChecked()))
             self.CB_Circle              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("circle",                 self.CB_Circle          .isChecked()))
@@ -2685,8 +2561,6 @@ class SelObserver:
                     ui.DS_PlacementZ.setValue(PlacementZ)
                     ui.on_CB_Sp_Placement()
             else:
-                ui.GB_Choice.setEnabled(False)
-                ui.GB_Choice.setStyleSheet("background-color: #F8E0E0;")
                 ui.DS_Radius_Circle.setEnabled(False)
                 ui.DS_Radius_Circle.setStyleSheet("background-color: #F8E0E0;")
                 ui.DS_Begin_Angle.setEnabled(False)
@@ -2695,17 +2569,15 @@ class SelObserver:
                 ui.DS_End_Angle.setStyleSheet("background-color: #F8E0E0;")
                 ui.DS_Correction_Radius.setEnabled(False)
                 ui.DS_Correction_Radius.setStyleSheet("background-color: #F8E0E0;")
-                ui.CB_Circle.setChecked(False)
-                ui.CB_Circle.setEnabled(False)
-                ui.CB_Circle.setStyleSheet("background-color: #F8E0E0;")
-                ui.GB_Path.setEnabled(True)
-                ui.GB_Path.setStyleSheet("background-color: #E0F8E0;") # #D0F5A9
-                ui.GB_Path.setTitle(_fromUtf8("Path ( " + str(round(selectedEdge.Length, 2)) + " mm )"))
+                #ui.CB_Circle.setChecked(False)
+                #ui.CB_Circle.setEnabled(False)
+                #ui.CB_Circle.setStyleSheet("background-color: #F8E0E0;")
                 ui.correctionAngle = 0.0
                 ui.DS_Correction_Angle.setValue(correctionAngle)
         except Exception:
-            selectedEdge = None
-            None
+            pass
+            #selectedEdge = None
+            #None
 
 ##    def setPreselection(self,doc,obj,sub):             # preselection
 ##        print "setPreselection"
@@ -2714,23 +2586,20 @@ class SelObserver:
 ##    def setSelection(self,doc):                        # Selection dans ComboView
 ##        print "SelObserver quit macro"
     def clearSelection(self,doc):                      # Si clic sur l'ecran, effacer la selection
-        #ui.on_PB_Reset_Placement()
-        #ui.GB_Choice.setEnabled(True)
-        #ui.GB_Choice.setStyleSheet("Base")
-        #ui.DS_Radius_Circle.setEnabled(True)
-        #ui.DS_Radius_Circle.setStyleSheet("Base")
-        #ui.DS_Begin_Angle.setEnabled(True)
-        #ui.DS_Begin_Angle.setStyleSheet("Base")
-        #ui.DS_End_Angle.setEnabled(True)
-        #ui.DS_End_Angle.setStyleSheet("Base")
-        #ui.DS_Correction_Radius.setEnabled(True)
-        #ui.DS_Correction_Radius.setStyleSheet("Base")
-        #ui.CB_Circle.setEnabled(True)
-        #ui.CB_Circle.setStyleSheet("Base")
-        #ui.GB_Path.setTitle(_fromUtf8("Path"))
-        #ui.GB_Path.setStyleSheet("Base")
-        #ui.GB_Path.setEnabled(False)
-        pass
+        try:
+            ui.on_PB_Reset_Placement()
+            ui.DS_Radius_Circle.setEnabled(True)
+            ui.DS_Radius_Circle.setStyleSheet("Base")
+            ui.DS_Begin_Angle.setEnabled(True)
+            ui.DS_Begin_Angle.setStyleSheet("Base")
+            ui.DS_End_Angle.setEnabled(True)
+            ui.DS_End_Angle.setStyleSheet("Base")
+            ui.DS_Correction_Radius.setEnabled(True)
+            ui.DS_Correction_Radius.setStyleSheet("Base")
+            #ui.CB_Circle.setEnabled(True)
+            #ui.CB_Circle.setStyleSheet("Base")
+        except Exception:
+            pass
 
 s=SelObserver()
 FreeCADGui.Selection.addObserver(s)                    # installe la fonction en mode resident
