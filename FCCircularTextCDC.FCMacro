@@ -762,22 +762,22 @@ class Ui_MainWindow(QWidget):
             self.fontDir = "/usr/share/fonts/"
 
         self.radius             = 10.0                  # radius
-        self.text               = "FreeCAD the best"    # FreeCad The Best your text
-        self.beginAngle         = 0.0                   # begin text
-        self.endAngle           = 360.0                 # must exceed the number of characters of text
+        self.text               = "FreeCAD the best "   # FreeCad The Best your text
+        self.beginAngle         = 90.0                  # begin text
+        self.endAngle           = -270.0                # must exceed the number of characters of text
         self.characterSize      = 2.0                   # size font
 
         self.exterieur          = 1                     # 1=exteral 0=internal
         self.baseHelix          = 0.0                   # base of helix
         self.endHelix           = 0.0                   # end of helix (heigth)
-        self.pasHelix           = 2.0                   # Pas of helix
+        self.pitchHelix           = 2.0                   # Pas of helix
         self.numberCharPerTern  = 10                    # number char by Pas
 
         self.PlacementX         = 0.0                   # Placement character axis X
         self.PlacementY         = 0.0                   # Placement characher axis Y
         self.PlacementZ         = 0.0                   # Placement characher axis Z
 
-        self.inclinationX       = 0.0                   # inclination character axis X
+        self.inclinationX       = -90.0                 # inclination character axis X
         self.inclinationY       = 0.0                   # inclination character axis Y
         self.inclinationZ       = 0.0                   # inclination character axis Z
 
@@ -1196,12 +1196,12 @@ class Ui_MainWindow(QWidget):
         self.CB_Helix = QtWidgets.QCheckBox()
         self.CB_Helix.toggled.connect(self.on_CB_Helix)
 
-        self.DS_Step_Of_The_Helix = QtWidgets.QDoubleSpinBox()
-        self.DS_Step_Of_The_Helix.setMaximum(99999999.99)
-        self.DS_Step_Of_The_Helix.setValue(self.pasHelix)
-        self.DS_Step_Of_The_Helix.setEnabled(False)
-        self.DS_Step_Of_The_Helix.valueChanged.connect(self.on_DS_Step_Of_The_Helix) #connection doubleSpinBox
-        self.L_Step_Of_The_Helix = QtWidgets.QLabel()
+        self.DS_Pitch_Helix = QtWidgets.QDoubleSpinBox()
+        self.DS_Pitch_Helix.setMaximum(99999999.99)
+        self.DS_Pitch_Helix.setValue(self.pitchHelix)
+        self.DS_Pitch_Helix.setEnabled(False)
+        self.DS_Pitch_Helix.valueChanged.connect(self.on_DS_Pitch_Helix) #connection doubleSpinBox
+        self.L_Pitch_Helix = QtWidgets.QLabel()
 
         self.DS_Number_Char_Per_Turn = QtWidgets.QSpinBox()
         self.DS_Number_Char_Per_Turn.setMaximum(99999999)
@@ -1211,7 +1211,6 @@ class Ui_MainWindow(QWidget):
         self.L_Number_Char_Per_Turn = QtWidgets.QLabel()
 
         self.DS_Base_Helix = QtWidgets.QDoubleSpinBox()
-        self.DS_Base_Helix.setEnabled(False)
         self.DS_Base_Helix.setMinimum(-99999999.0)
         self.DS_Base_Helix.setMaximum(99999999.0)
         self.DS_Base_Helix.setValue(self.baseHelix)
@@ -1220,7 +1219,6 @@ class Ui_MainWindow(QWidget):
         self.L_Base_Helix = QtWidgets.QLabel()
       
         self.DS_End_Helix = QtWidgets.QDoubleSpinBox()
-        self.DS_End_Helix.setEnabled(False)
         self.DS_End_Helix.setMinimum(-99999999.0)
         self.DS_End_Helix.setMaximum(99999999.0)
         self.DS_End_Helix.setValue(self.endHelix)
@@ -1367,8 +1365,8 @@ class Ui_MainWindow(QWidget):
 
         self.GL_Helix.addWidget(self.CB_Helix, 0, 0, 1, 1)
 
-        self.GL_Helix.addWidget(self.DS_Step_Of_The_Helix, 1, 0, 1, 1)
-        self.GL_Helix.addWidget(self.L_Step_Of_The_Helix, 1, 1, 1, 1)
+        self.GL_Helix.addWidget(self.DS_Pitch_Helix, 1, 0, 1, 1)
+        self.GL_Helix.addWidget(self.L_Pitch_Helix, 1, 1, 1, 1)
         self.GL_Helix.addWidget(self.DS_Number_Char_Per_Turn, 1, 2, 1, 1)
         self.GL_Helix.addWidget(self.L_Number_Char_Per_Turn, 1, 3, 1, 1)
         self.GL_Helix.addWidget(self.DS_Base_Helix, 2, 0, 1, 1)
@@ -1608,20 +1606,20 @@ class Ui_MainWindow(QWidget):
         self.CB_Helix.setText(_fromUtf8("Enable helix"))
         self.CB_Helix.setToolTip(_fromUtf8("Enable helix support"))
 
-        self.DS_Step_Of_The_Helix.setSuffix(_fromUtf8(" mm"))
-        self.DS_Step_Of_The_Helix.setToolTip(_fromUtf8("Step of the text along the helix (min Size Caractere)"))
-        self.L_Step_Of_The_Helix.setText(_fromUtf8("Step of Helix"))
+        self.DS_Pitch_Helix.setSuffix(_fromUtf8(" mm"))
+        self.DS_Pitch_Helix.setToolTip(_fromUtf8("Pitch of the text along the helix (min Size Caractere)"))
+        self.L_Pitch_Helix.setText(_fromUtf8("Pitch"))
 
         self.DS_Number_Char_Per_Turn.setToolTip(_fromUtf8("Number of characters for one turn of helix"))
         self.L_Number_Char_Per_Turn.setText(_fromUtf8("Char. per turn"))
 
         self.DS_Base_Helix.setToolTip(_fromUtf8("Base (begin) of helix (to activate Step of Helix must be zero)"))
         self.DS_Base_Helix.setSuffix(_fromUtf8(" mm"))
-        self.L_Base_Helix.setText(_fromUtf8("Base Helix"))
+        self.L_Base_Helix.setText(_fromUtf8("Base"))
 
         self.DS_End_Helix.setToolTip(_fromUtf8("Final height of the helix (to activate Step of Helix must be zero)"))
         self.DS_End_Helix.setSuffix(_fromUtf8(" mm"))
-        self.L_End_Helix.setText(_fromUtf8("End Helix"))
+        self.L_End_Helix.setText(_fromUtf8("End"))
 
         ####
         self.GB_Command.setTitle(_fromUtf8("Command"))
@@ -1661,9 +1659,13 @@ class Ui_MainWindow(QWidget):
         
         self.font.setFamily(self.tableau[self.index][5])
         self.font.setPointSize(self.FontTextSize)
+        #self.font.setPointSize(48*64)
         ####
         self.fonteComp   = self.tableau[self.index][1]
         self.fontName = self.tableau[self.index][2]
+
+        self.fontMetrics = QtGui.QFontMetrics(self.font)
+        print (self.fontMetrics.ascent(), self.fontMetrics.descent(), self.fontMetrics.height())
 #        FreeCAD.Console.PrintMessage(str(self.index) + " , " + self.tableau[self.index][1] + " , " + self.tableau[self.index][2] + " , ' " + famille + "' , ' " + typeCar + " ' \n")
     #### matplotlib fin 5/5 #################################################################
 
@@ -1769,16 +1771,6 @@ class Ui_MainWindow(QWidget):
         self.DS_PlacementZ.setValue(self.PlacementZ)
         self.DS_PlacementZ.setEnabled(False)
         
-    def on_PB_Reset_Inclination(self):           # Reset_Inclination
-        self.inclinationX = self.inclinationY = self.inclinationZ = 0.0
-        #self.CB_Sp_Inclination.setChecked(False)
-        self.DS_InclinationX.setValue(self.inclinationX)
-        #self.DS_InclinationX.setEnabled(False)
-        self.DS_InclinationY.setValue(self.inclinationY)
-        #self.DS_InclinationY.setEnabled(False)
-        self.DS_InclinationZ.setValue(self.inclinationZ)
-        #self.DS_InclinationZ.setEnabled(False)
-
     def on_DS_Radius_Circle(self,value):
         self.radius = value  
         self.radiusSupport = value
@@ -1832,13 +1824,13 @@ class Ui_MainWindow(QWidget):
             self.S_Number_Faces_Support.setValue(0)
 
     def on_CB_Helix(self,value):
-        self.DS_Step_Of_The_Helix.setEnabled(value)
+        self.DS_Pitch_Helix.setEnabled(value)
         self.DS_Number_Char_Per_Turn.setEnabled(value)
         self.DS_Base_Helix.setEnabled(value)
         self.DS_End_Helix.setEnabled(value)
 
         if not value:
-            self.DS_Step_Of_The_Helix.setValue(0.0)
+            self.DS_Pitch_Helix.setValue(0.0)
             self.DS_Number_Char_Per_Turn.setValue(1.0)
             self.DS_Base_Helix.setValue(0.0)
             self.DS_End_Helix.setValue(0.0)
@@ -1894,9 +1886,9 @@ class Ui_MainWindow(QWidget):
     #    else:
     #        self.on_PB_Reset_Inclination()
 
-    def on_DS_Step_Of_The_Helix(self,value):   # 
-        self.pasHelix = value
-        if self.pasHelix == 0:
+    def on_DS_Pitch_Helix(self,value):   # 
+        self.pitchHelix = value
+        if self.pitchHelix == 0:
             self.baseHelix = self.endHelix = 0.0
             self.DS_Base_Helix.setValue(self.baseHelix)
             self.DS_Base_Helix.setEnabled(True)
@@ -1970,9 +1962,6 @@ class Ui_MainWindow(QWidget):
 
         self.CB_Word.setChecked(False)
 
-        self.RA_Choice_Outdoor.setChecked(True)
-        self.update_PB_Flat()
-
         self.DS_Size_Character.setValue(self.characterSize)
         self.DS_Radius_Circle.setValue(self.radius)
 
@@ -1988,29 +1977,22 @@ class Ui_MainWindow(QWidget):
         self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
 
         self.on_PB_Reset_Placement()
-        self.on_PB_Reset_Inclination()
 
-        self.GB_Helix.setEnabled(False)
+        self.DS_InclinationX.setValue(self.inclinationX)
+        self.DS_InclinationY.setValue(self.inclinationY)
+        self.DS_InclinationZ.setValue(self.inclinationZ)
+
+        self.CB_Helix.setEnabled(False)
         self.DS_Base_Helix.setValue(self.baseHelix)
         self.DS_Base_Helix.setEnabled(False)
         self.DS_End_Helix.setValue(self.endHelix)
         self.DS_Base_Helix.setEnabled(False)
-        self.DS_Step_Of_The_Helix.setValue(self.pasHelix)
+        self.DS_Pitch_Helix.setValue(self.pitchHelix)
         self.DS_Number_Char_Per_Turn.setValue(self.numberCharPerTern)
 
-        #self.GB_Clock.setEnabled(False)
-        self.DS_Radius_Support.setValue(self.radiusSupport)
-        self.S_Number_Faces_Support.setValue(self.nombreFaces)
-        self.L_Number_Faces_Support.setText(_fromUtf8("Support number face"))
-        self.DS_Extrude_Support.setEnabled(False)
-        self.DS_Extrude_Support.setValue(self.extrudeSupport)
-        self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
+        self.CB_Support.setChecked(False)
 
         self.RB_Mid_Mid.setChecked(True)
-
-        self.update_Roman()
-
-        self.update_Redress()
 
         self.on_textEdit_Changed()
 
@@ -2066,7 +2048,7 @@ class Ui_MainWindow(QWidget):
                 
                 for position in range(len(textData)):                                                             # list and display the coordinates
     
-                    ss=Draft.makeShapeString(String=textData[position],FontFile=self.fontFullPath,Size=characterSize,Tracking=0)
+                    ss=Draft.makeShapeString(String=textData[position],FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
 
                     ss.Label = textData[position]
                     Draft.autogroup(ss)
@@ -2173,8 +2155,8 @@ class Ui_MainWindow(QWidget):
                     FreeCAD.Console.PrintError("Insufficient number"+"\n")
                 pas = 0.0
                 nombre = self.numberCharPerTern
-                if self.pasHelix != 0:
-                    pas = self.pasHelix / (self.numberCharPerTern)
+                if self.pitchHelix != 0:
+                    pas = self.pitchHelix / (self.numberCharPerTern)
                 else:
                     pas = ((((self.endHelix - self.characterSize)-self.baseHelix)/(len(textData) / self.numberCharPerTern))/(self.numberCharPerTern)) # pas of helix
                     coorZ += self.baseHelix
@@ -2219,8 +2201,9 @@ class Ui_MainWindow(QWidget):
                         Draft.autogroup(ss)
     
                         lengthX  = ss.Shape.BoundBox.XLength
-                        lengthY  = ss.Shape.BoundBox.YLength
-                        lengthZ  = ss.Shape.BoundBox.ZLength
+                        #lengthY  = ss.Shape.BoundBox.YLength
+                        lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
+                        lengthZ  = ss.Shape.BoundBox.ZLength # N.B. Should always be 0
                         centreX  = lengthX * self.charAlignMultipliers[0]
                         centreY  = lengthY * self.charAlignMultipliers[1]
                         centreZ  = lengthZ * self.charAlignMultipliers[2]
@@ -2393,7 +2376,7 @@ class Ui_MainWindow(QWidget):
         FreeCAD.ParamGet(self.userParams).SetBool    ("enableHelix",             self.CB_Helix.isChecked())
         FreeCAD.ParamGet(self.userParams).SetFloat   ("baseHelix",               self.DS_Base_Helix.value())
         FreeCAD.ParamGet(self.userParams).SetFloat   ("endHelix",                self.DS_End_Helix.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("pasHelix",                self.DS_Step_Of_The_Helix.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("pitchHelix",              self.DS_Pitch_Helix.value())
         FreeCAD.ParamGet(self.userParams).SetInt     ("numberCharPerTern",       self.DS_Number_Char_Per_Turn.value())
 
         FreeCAD.ParamGet(self.userParams).SetBool    ("setExtrude",              self.CB_Extrude.isChecked())
@@ -2468,7 +2451,7 @@ class Ui_MainWindow(QWidget):
             self.CB_Helix               .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("enableHelix",            self.CB_Helix.isChecked()))
             self.DS_Base_Helix          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("baseHelix",             self.DS_Base_Helix.value()))
             self.DS_End_Helix           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endHelix",              self.DS_End_Helix.value()))
-            self.DS_Step_Of_The_Helix   .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("pasHelix",              self.DS_Step_Of_The_Helix.value()))
+            self.DS_Pitch_Helix         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("pitchHelix",            self.DS_Pitch_Helix.value()))
             self.DS_Number_Char_Per_Turn.setValue  (FreeCAD.ParamGet(self.userParams).GetInt("numberCharPerTern",       self.DS_Number_Char_Per_Turn.value()))
 
             extrude                               = FreeCAD.ParamGet(self.userParams).GetBool("setExtrude",             self.CB_Extrude.isChecked())
