@@ -2079,6 +2079,10 @@ class Ui_MainWindow(QWidget):
         if doc == None:
             doc = FreeCAD.newDocument()
 
+        FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + self.textLabel)
+        if self.CB_Points.isChecked():
+            FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + self.textLabel)
+
 #### Path
 
         # create text on wire, arc, circle edge... 
@@ -2093,38 +2097,33 @@ class Ui_MainWindow(QWidget):
         if (hasattr(selectedEdge,'Surface')) or (hasattr(selectedEdge,'Point')):
             passNoOk = 1
 
-        if (len(ssel) != 0) and (passNoOk == 0):
-            
-            FcString = doc.addObject("App::DocumentObjectGroup","FcStringP_" + self.textLabel)
-            if self.CB_Points.isChecked():
-                FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + self.textLabel)
-
+        if (len(ssel) != 0) and (passNoOk == 0):            
             try:
                 numberOfPoints = self.textDataLen                   # Decomposition number (or precision you can change)
                 points = selectedEdge.discretize(numberOfPoints)    # discretize the element
                 pasTab = 0
                 
-                for position in range(self.textDataLen):                                                             # list and display the coordinates
+                for position in range(self.textDataLen):
+                    string = self.textData[position]
+                    point  = points[position]
     
-                    ss=Draft.makeShapeString(String=self.textData[position],FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
-
-                    ss.Label = self.textData[position]
+                    ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
+                    ss.Label = string
                     Draft.autogroup(ss)
-                    FcString.addObject(ss)  # contener character
-                    self.sss.append(ss)
-    
-                    lengthX = ss.Shape.BoundBox.XLength
-                    lengthY = ss.Shape.BoundBox.YLength
-                    lengthZ = ss.Shape.BoundBox.ZLength
-                    centreX = lengthX * self.charAlignMultipliers[0]
-                    centreY = lengthY * self.charAlignMultipliers[1]
-                    centreZ = lengthZ * self.charAlignMultipliers[2]
-                    coorX  = points[position][0] - centreX
-                    coorY  = points[position][1] - centreY
-                    coorZ  = points[position][2] - centreZ
-                
-                    plm = FreeCAD.Placement()                                                # placement object
-                    plm.Base=FreeCAD.Vector(coorX,coorY,coorZ)
+
+                    lengthX  = ss.Shape.BoundBox.XLength
+                    lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
+                    lengthZ  = ss.Shape.BoundBox.ZLength
+                    centreX  = lengthX * self.charAlignMultipliers[0]
+                    centreY  = lengthY * self.charAlignMultipliers[1]
+                    centreZ  = lengthZ * self.charAlignMultipliers[2]
+                    coorX    = point[0] - centreX
+                    coorY    = point[1] - centreY
+                    coorZ    = point[2] - centreZ
+
+                    rotX     = self.inclinationX
+                    rotY     = self.inclinationY
+                    rotZ     = self.inclinationZ
                 
                     #if self.RB_Path_Orthogonal.isChecked():
                     #    #plm.Base=FreeCAD.Vector(points[position][0] - (XXLongueur), points[position][1] - (YYLongueur), points[position][2])
@@ -2152,11 +2151,20 @@ class Ui_MainWindow(QWidget):
                     #        plm.Base = pointsDirection[-1]
                     #    plm = plm.multiply(FreeCAD.Placement(FreeCAD.Vector(centreX + PlacementX, centreY + PlacementY, centreZ + PlacementZ), FreeCAD.Rotation(correctionAngle, 0, 0), FreeCAD.Vector(0,0,0)))
 
+                    plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
+
                     ####
-                    if self.extrude > 0:         # extrusion characrters
+                    if self.extrude != 0:         # extrusion characrters
+                        extrudeUp = self.extrude * self.extrudeAlignMultiplier
+                        extrudeDn = self.extrude - extrudeUp
+
                         CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                        CharExtrude.Label = self.textData[position]
+                        CharExtrude.LengthFwd = extrudeUp
+                        CharExtrude.LengthRev = extrudeDn
+                        CharExtrude.Label = string
                         CharExtrude.Placement = plm 
+                        CharExtrude.Solid = self.CB_Solid.isChecked()
+
                         try:
                             CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
                         except Exception:
@@ -2165,31 +2173,33 @@ class Ui_MainWindow(QWidget):
                         if self.CB_BoundBox.isChecked():
                             CharExtrude.ViewObject.BoundingBox = True
 
-                        CharExtrude.Solid = self.CB_Solid.isChecked()
-
                         FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
 
                         comP.append(CharExtrude.Shape)
                         FcString.addObject(CharExtrude)  # contener extrude
                         self.exs.append(CharExtrude)
                     else:                 # 
-                        ss.Placement = plm
+                        ss.Placement=plm 
                         ss.Support=None
                         try:
                             ss.ViewObject.DisplayMode = u"Flat Lines"
                         except Exception:
                             None
+
                         if self.CB_BoundBox.isChecked():
                             ss.ViewObject.BoundingBox = True
+
                         comP.append(ss.Shape)
+                        FcString.addObject(ss)  # contener character
+                        self.sss.append(ss)
                     ####
                     if self.CB_Points.isChecked():
                         pointRepere = Draft.makePoint(plm.Base)
                         pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
-                        pointRepere.Label = self.textData[position]
+                        pointRepere.Label = string
                         FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
                         FcStringPoints.addObject(pointRepere)
-                    ####DS_Helix_Char_Per_Turn
+                    ####    
                     if self.CB_Progression.isChecked():
                         FreeCADGui.updateGui()                                 # rafraichi l'ecran
                     ####
@@ -2203,10 +2213,6 @@ class Ui_MainWindow(QWidget):
             ligne = Draft.makeWire(vecligne,closed=False,face=False,support=None)     # creation de la ligne de base
             lineName = ligne.Name
     
-            FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + self.textLabel)
-            if self.CB_Points.isChecked():
-                FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + self.textLabel)
-
             angleTr = self.beginAngle
             coorZ = self.PlacementZ + self.helixBase
 
@@ -2217,25 +2223,24 @@ class Ui_MainWindow(QWidget):
                 angleInc = 0
                 zInc = 0
 
-            for string in self.textData:
+            for position in range(self.textDataLen):
+                string = self.textData[position]
                 ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
-
-                a = ligne.End # fin de ligne
-                coorX = a[0]
-                coorY = a[1]
-                #coorZ = a[2]
+                point  = ligne.End
 
                 ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
-
                 ss.Label = string
                 Draft.autogroup(ss)
 
                 lengthX  = ss.Shape.BoundBox.XLength
                 lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
+                lengthZ  = ss.Shape.BoundBox.ZLength
                 centreX  = lengthX * self.charAlignMultipliers[0]
                 centreY  = lengthY * self.charAlignMultipliers[1]
-                coorX   -= centreX
-                coorY   -= centreY
+                centreZ  = lengthZ * self.charAlignMultipliers[2]
+                coorX    = point[0] - centreX
+                coorY    = point[1] - centreY
+                #coorZ    = point[2] - centreZ
 
                 rotX     = self.inclinationX
                 rotY     = self.inclinationY
@@ -2244,7 +2249,7 @@ class Ui_MainWindow(QWidget):
                 if not self.CB_Fixed_Angle.isChecked():
                     rotX += angleTr
 
-                plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,0.0)) # pitch,roll...1
+                plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
 
                 ####
                 if self.extrude != 0:         # extrusion characrters
