@@ -772,7 +772,7 @@ class Ui_MainWindow(QWidget):
         self.helixBase          = 0.0                   # base of helix
         self.helixEnd           = 0.0                   # end of helix (heigth)
         self.helixPitch         = 2.0                   # Pas of helix
-        self.helixCharPerTern  = 10                    # number char by Pas
+        self.helixCharPerTern   = 10                    # number char by Pas
         self.helixLoops         = 1                     # number of loops 
 
         self.PlacementX         = 0.0                   # Placement character axis X
@@ -935,6 +935,7 @@ class Ui_MainWindow(QWidget):
         self.GB_Text = QtWidgets.QGroupBox()
 
         self.TE_Text = QtWidgets.QTextEdit()
+        self.TE_Text.setMaximumHeight(74)
         self.TE_Text.textChanged.connect(self.on_TE_Changed)
 
         self.frame_Option = QtWidgets.QFrame()
@@ -1230,6 +1231,7 @@ class Ui_MainWindow(QWidget):
         self.DS_Helix_Loops.setMinimum(0)
         self.DS_Helix_Loops.setMaximum(99999999.0)
         self.DS_Helix_Loops.setValue(self.helixLoops)
+        self.DS_Helix_Loops.setEnabled(False)
         self.DS_Helix_Loops.valueChanged.connect(self.on_DS_Helix_Loops) # connection spinBox
         self.L_Helix_Loops = QtWidgets.QLabel()
 
@@ -2201,116 +2203,102 @@ class Ui_MainWindow(QWidget):
             ligne = Draft.makeWire(vecligne,closed=False,face=False,support=None)     # creation de la ligne de base
             lineName = ligne.Name
     
-            nombre = self.textDataLen
-
-            coorZ = self.PlacementZ
-               
             FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + self.textLabel)
             if self.CB_Points.isChecked():
                 FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + self.textLabel)
 
-            ####Boucle principale############################################################################
-            loops = int(self.textDataLen / self.helixCharPerTern)
-    
-    #        if (len(text) % numberCharPerTern) != 0: # calcul number spires Helix
-    #            boucler += 1
-    
-            #position = -1
-            for loop in range(loops):
-                #ii = -1
+            angleTr = self.beginAngle
+            coorZ = self.PlacementZ + self.helixBase
 
-                angleTr = self.beginAngle
-                coorZ = self.PlacementZ + self.helixBase
+            if self.textDataLen > 1:
+                angleInc = (self.endAngle - self.beginAngle)/(self.textDataLen - 1)
+                zInc = (self.helixEnd - self.helixBase)/(self.textDataLen - 1)
+            else:
+                angleInc = 0
+                zInc = 0
 
-                if nombre > 1:
-                    angleInc = (self.endAngle - self.beginAngle)/(nombre - 1)
-                    zInc = (self.helixEnd - self.helixBase)/(nombre - 1)
-                else:
-                    angleInc = 0
-                    zInc = 0
+            for string in self.textData:
+                ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
 
-                for string in self.textData:
-                    ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
-    
-                    a = ligne.End # fin de ligne
-                    coorX = a[0]
-                    coorY = a[1]
-                    #coorZ = a[2]
-    
-                    ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
+                a = ligne.End # fin de ligne
+                coorX = a[0]
+                coorY = a[1]
+                #coorZ = a[2]
 
-                    ss.Label = string
-                    Draft.autogroup(ss)
+                ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
 
-                    lengthX  = ss.Shape.BoundBox.XLength
-                    lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
-                    centreX  = lengthX * self.charAlignMultipliers[0]
-                    centreY  = lengthY * self.charAlignMultipliers[1]
-                    coorX   -= centreX
-                    coorY   -= centreY
+                ss.Label = string
+                Draft.autogroup(ss)
 
-                    rotX     = self.inclinationX
-                    rotY     = self.inclinationY
-                    rotZ     = self.inclinationZ
+                lengthX  = ss.Shape.BoundBox.XLength
+                lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
+                centreX  = lengthX * self.charAlignMultipliers[0]
+                centreY  = lengthY * self.charAlignMultipliers[1]
+                coorX   -= centreX
+                coorY   -= centreY
 
-                    if not self.CB_Fixed_Angle.isChecked():
-                        rotX += angleTr
+                rotX     = self.inclinationX
+                rotY     = self.inclinationY
+                rotZ     = self.inclinationZ
 
-                    plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,0.0)) # pitch,roll...1
+                if not self.CB_Fixed_Angle.isChecked():
+                    rotX += angleTr
 
-                    ####
-                    if self.extrude != 0:         # extrusion characrters
-                        extrudeUp = self.extrude * self.extrudeAlignMultiplier
-                        extrudeDn = self.extrude - extrudeUp
+                plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,0.0)) # pitch,roll...1
 
-                        CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                        CharExtrude.LengthFwd = extrudeUp
-                        CharExtrude.LengthRev = extrudeDn
-                        CharExtrude.Label = string
-                        CharExtrude.Placement = plm 
-                        CharExtrude.Solid = self.CB_Solid.isChecked()
+                ####
+                if self.extrude != 0:         # extrusion characrters
+                    extrudeUp = self.extrude * self.extrudeAlignMultiplier
+                    extrudeDn = self.extrude - extrudeUp
 
-                        try:
-                            CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
-                        except Exception:
-                            None
+                    CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
+                    CharExtrude.LengthFwd = extrudeUp
+                    CharExtrude.LengthRev = extrudeDn
+                    CharExtrude.Label = string
+                    CharExtrude.Placement = plm 
+                    CharExtrude.Solid = self.CB_Solid.isChecked()
 
-                        if self.CB_BoundBox.isChecked():
-                            CharExtrude.ViewObject.BoundingBox = True
+                    try:
+                        CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
+                    except Exception:
+                        None
 
-                        FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
+                    if self.CB_BoundBox.isChecked():
+                        CharExtrude.ViewObject.BoundingBox = True
 
-                        comP.append(CharExtrude.Shape)
-                        FcString.addObject(CharExtrude)  # contener extrude
-                        self.exs.append(CharExtrude)
-                    else:                 # 
-                        ss.Placement=plm 
-                        ss.Support=None
-                        try:
-                            ss.ViewObject.DisplayMode = u"Flat Lines"
-                        except Exception:
-                            None
+                    FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
 
-                        if self.CB_BoundBox.isChecked():
-                            ss.ViewObject.BoundingBox = True
+                    comP.append(CharExtrude.Shape)
+                    FcString.addObject(CharExtrude)  # contener extrude
+                    self.exs.append(CharExtrude)
+                else:                 # 
+                    ss.Placement=plm 
+                    ss.Support=None
+                    try:
+                        ss.ViewObject.DisplayMode = u"Flat Lines"
+                    except Exception:
+                        None
 
-                        comP.append(ss.Shape)
-                        FcString.addObject(ss)  # contener character
-                        self.sss.append(ss)
-                    ####
-                    if self.CB_Points.isChecked():
-                        pointRepere = Draft.makePoint(plm.Base)
-                        pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
-                        pointRepere.Label = string
-                        FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
-                        FcStringPoints.addObject(pointRepere)
-                    ####    
-                    if self.CB_Progression.isChecked():
-                        FreeCADGui.updateGui()                                 # rafraichi l'ecran
-                    ####
+                    if self.CB_BoundBox.isChecked():
+                        ss.ViewObject.BoundingBox = True
 
-                    angleTr += angleInc
-                    coorZ   += zInc
+                    comP.append(ss.Shape)
+                    FcString.addObject(ss)  # contener character
+                    self.sss.append(ss)
+                ####
+                if self.CB_Points.isChecked():
+                    pointRepere = Draft.makePoint(plm.Base)
+                    pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
+                    pointRepere.Label = string
+                    FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
+                    FcStringPoints.addObject(pointRepere)
+                ####    
+                if self.CB_Progression.isChecked():
+                    FreeCADGui.updateGui()                                 # rafraichi l'ecran
+                ####
+
+                angleTr += angleInc
+                coorZ   += zInc
 
             #BSpline = Draft.makeBSpline(points,closed=False)                  # makeBSpline repere
             FreeCAD.ActiveDocument.removeObject(lineName)     # remove ligne de base directrice
@@ -2393,69 +2381,69 @@ class Ui_MainWindow(QWidget):
 
         FreeCAD.ParamGet(self.userParams).SetString("Version",__Version__ + " (" + __Date__ + ")")
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("switchResetToDefaults",   self.switchResetToDefaults)
-        FreeCAD.ParamGet(self.userParams).SetBool    ("switchModeTextList",      self.switchModeTextList)
-        FreeCAD.ParamGet(self.userParams).SetBool    ("switchFontComBox",        self.switchFontComBox)
-        FreeCAD.ParamGet(self.userParams).SetBool    ("setSystemFonts",          self.setSystemFonts)
-        FreeCAD.ParamGet(self.userParams).SetInt     ("setTextAlignement",       self.setTextAlignement)
+        FreeCAD.ParamGet(self.userParams).SetBool  ("switchResetToDefaults",    self.switchResetToDefaults)
+        FreeCAD.ParamGet(self.userParams).SetBool  ("switchModeTextList",       self.switchModeTextList)
+        FreeCAD.ParamGet(self.userParams).SetBool  ("switchFontComBox",         self.switchFontComBox)
+        FreeCAD.ParamGet(self.userParams).SetBool  ("setSystemFonts",           self.setSystemFonts)
+        FreeCAD.ParamGet(self.userParams).SetInt   ("setTextAlignement",        self.setTextAlignement)
 
-        FreeCAD.ParamGet(self.userParams).SetString  ("text",                    self.TE_Text.toPlainText())
-        FreeCAD.ParamGet(self.userParams).SetString  ("fontName",                self.fontName)
-        FreeCAD.ParamGet(self.userParams).SetBool    ("byWord",                  self.CB_Word.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetString("text",                     self.TE_Text.toPlainText())
+        FreeCAD.ParamGet(self.userParams).SetString("fontName",                 self.fontName)
+        FreeCAD.ParamGet(self.userParams).SetBool  ("byWord",                   self.CB_Word.isChecked())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("fixedAngle",              self.CB_Fixed_Angle.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("fixedAngle",               self.CB_Fixed_Angle.isChecked())
 
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("radius",                  self.DS_Radius_Circle.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("beginAngle",              self.DS_Begin_Angle.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("endAngle",                self.DS_End_Angle.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("characterSize",           self.DS_Size_Character.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("radius",                   self.DS_Radius_Circle.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("beginAngle",               self.DS_Begin_Angle.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("endAngle",                 self.DS_End_Angle.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("characterSize",            self.DS_Size_Character.value())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("helixEnable",             self.CB_Helix.isChecked())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixBase",               self.DS_Helix_Base.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixEnd",                self.DS_Helix_End.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixPitch",              self.DS_Helix_Pitch.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("numberCharPerTern",       self.DS_Helix_Char_Per_Turn.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixLoops",              self.DS_Helix_Loops.value())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("helixEnable",              self.CB_Helix.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("helixBase",                self.DS_Helix_Base.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("helixEnd",                 self.DS_Helix_End.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("helixPitch",               self.DS_Helix_Pitch.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("numberCharPerTern",        self.DS_Helix_Char_Per_Turn.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("helixLoops",               self.DS_Helix_Loops.value())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("setExtrude",              self.CB_Extrude.isChecked())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("extrude",                 self.DS_Extrude.value())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("setExtrude",               self.CB_Extrude.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("extrude",                  self.DS_Extrude.value())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("setPlacement",            self.CB_Sp_Placement.isChecked())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("PlacementX",              self.DS_PlacementX.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("PlacementY",              self.DS_PlacementY.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("PlacementZ",              self.DS_PlacementZ.value())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("setPlacement",             self.CB_Sp_Placement.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("PlacementX",               self.DS_PlacementX.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("PlacementY",               self.DS_PlacementY.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("PlacementZ",               self.DS_PlacementZ.value())
 
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinationX",            self.DS_InclinationX.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinationY",            self.DS_InclinationY.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("inclinationZ",            self.DS_InclinationZ.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("inclinationX",             self.DS_InclinationX.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("inclinationY",             self.DS_InclinationY.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("inclinationZ",             self.DS_InclinationZ.value())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("support",                 self.CB_Support.isChecked())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("radiusSupport",           self.DS_Radius_Support.value())
-        FreeCAD.ParamGet(self.userParams).SetInt     ("nombreFaces",             self.S_Number_Faces_Support.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("extrudeSupport",          self.DS_Extrude_Support.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("rotateSupport",           self.DS_Rotate_Support.value())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("support",                  self.CB_Support.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("radiusSupport",            self.DS_Radius_Support.value())
+        FreeCAD.ParamGet(self.userParams).SetInt   ("nombreFaces",              self.S_Number_Faces_Support.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("extrudeSupport",           self.DS_Extrude_Support.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat ("rotateSupport",            self.DS_Rotate_Support.value())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("points",                  self.CB_Points        .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("circle",                  self.CB_Circle        .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("boundBox",                self.CB_BoundBox      .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("progression",             self.CB_Progression   .isChecked())
-                                                                                             
-        FreeCAD.ParamGet(self.userParams).SetBool    ("solid",                   self.CB_Solid         .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("liveUpdate",              self.CB_Live_Update   .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("points",                   self.CB_Points        .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("circle",                   self.CB_Circle        .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("boundBox",                 self.CB_BoundBox      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("progression",              self.CB_Progression   .isChecked())
+                                                                                           
+        FreeCAD.ParamGet(self.userParams).SetBool  ("solid",                    self.CB_Solid         .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("liveUpdate",               self.CB_Live_Update   .isChecked())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignTL",             self.RB_Top_Left      .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignTM",             self.RB_Top_Mid       .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignTR",             self.RB_Top_Right     .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignML",             self.RB_Mid_Left      .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignMM",             self.RB_Mid_Mid       .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignMR",             self.RB_Mid_Right     .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignBL",             self.RB_Bot_Left      .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignBM",             self.RB_Bot_Mid       .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("charAlignBR",             self.RB_Bot_Right     .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignTL",              self.RB_Top_Left      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignTM",              self.RB_Top_Mid       .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignTR",              self.RB_Top_Right     .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignML",              self.RB_Mid_Left      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignMM",              self.RB_Mid_Mid       .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignMR",              self.RB_Mid_Right     .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignBL",              self.RB_Bot_Left      .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignBM",              self.RB_Bot_Mid       .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("charAlignBR",              self.RB_Bot_Right     .isChecked())
 
-        FreeCAD.ParamGet(self.userParams).SetBool    ("extrudeAlignF",           self.RB_Extrude_Front .isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("extrudeAlignM",           self.RB_Extrude_Middle.isChecked())
-        FreeCAD.ParamGet(self.userParams).SetBool    ("extrudeAlignB",           self.RB_Extrude_Back  .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("extrudeAlignF",            self.RB_Extrude_Front .isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("extrudeAlignM",            self.RB_Extrude_Middle.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("extrudeAlignB",            self.RB_Extrude_Back  .isChecked())
 
         print(__Title__ + ":Done save settings")
 
@@ -2466,34 +2454,34 @@ class Ui_MainWindow(QWidget):
 
         if prefVersion == __Version__ + " (" + __Date__ + ")":
             ###### Read Configuration if version matches begin ####
-            self.switchResetToDefaults            = FreeCAD.ParamGet(self.userParams).GetBool("switchResetToDefaults",  self.switchResetToDefaults)
-            self.switchModeTextList               = FreeCAD.ParamGet(self.userParams).GetBool("switchModeTextList",     self.switchModeTextList)
-            self.switchFontComBox                 = FreeCAD.ParamGet(self.userParams).GetBool("switchFontComBox",       self.switchFontComBox)
-            self.setSystemFonts                   = FreeCAD.ParamGet(self.userParams).GetBool("setSystemFonts",         self.setSystemFonts)
-            self.setTextAlignement                = FreeCAD.ParamGet(self.userParams).GetInt("setTextAlignement",       self.setTextAlignement)
+            self.switchResetToDefaults            = FreeCAD.ParamGet(self.userParams).GetBool   ("switchResetToDefaults",   self.switchResetToDefaults)
+            self.switchModeTextList               = FreeCAD.ParamGet(self.userParams).GetBool   ("switchModeTextList",      self.switchModeTextList)
+            self.switchFontComBox                 = FreeCAD.ParamGet(self.userParams).GetBool   ("switchFontComBox",        self.switchFontComBox)
+            self.setSystemFonts                   = FreeCAD.ParamGet(self.userParams).GetBool   ("setSystemFonts",          self.setSystemFonts)
+            self.setTextAlignement                = FreeCAD.ParamGet(self.userParams).GetInt    ("setTextAlignement",       self.setTextAlignement)
 
-            self.TE_Text         .setText(_fromUtf8(FreeCAD.ParamGet(self.userParams).GetString("text",                 self.TE_Text.toPlainText())))
-            self.fontName                         = FreeCAD.ParamGet(self.userParams).GetString("fontName",             self.fontName)
-            self.searchFont(self.fontDir,self.fontName)                                                                 
-            self.CB_Word                .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("byWord",                 self.CB_Word.isChecked()))
+            self.TE_Text         .setText(_fromUtf8(FreeCAD.ParamGet(self.userParams).GetString ("text",                    self.TE_Text.toPlainText())))
+            self.fontName                         = FreeCAD.ParamGet(self.userParams).GetString ("fontName",                self.fontName)
+            self.searchFont(self.fontDir,self.fontName)                                                                     
+            self.CB_Word                .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("byWord",                  self.CB_Word.isChecked()))
 
-            self.CB_Fixed_Angle         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("fixedAngle",             self.CB_Fixed_Angle.isChecked()))
+            self.CB_Fixed_Angle         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("fixedAngle",              self.CB_Fixed_Angle.isChecked()))
 
-            self.DS_Radius_Circle       .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("radius",                self.DS_Radius_Circle.value()))
-            self.DS_Begin_Angle         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("beginAngle",            self.DS_Begin_Angle.value()))
-            self.DS_End_Angle           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endAngle",              self.DS_End_Angle.value()))
-            self.DS_Size_Character      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("characterSize",         self.DS_Size_Character.value()))
+            self.DS_Radius_Circle       .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("radius",                  self.DS_Radius_Circle.value()))
+            self.DS_Begin_Angle         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("beginAngle",              self.DS_Begin_Angle.value()))
+            self.DS_End_Angle           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("endAngle",                self.DS_End_Angle.value()))
+            self.DS_Size_Character      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("characterSize",           self.DS_Size_Character.value()))
 
-            self.CB_Helix               .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("enableHelix",            self.CB_Helix.isChecked()))
-            self.DS_Helix_Base          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("baseHelix",             self.DS_Helix_Base.value()))
-            self.DS_Helix_End           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endHelix",              self.DS_Helix_End.value()))
-            self.DS_Helix_Pitch         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("pitchHelix",            self.DS_Helix_Pitch.value()))
-            self.DS_Helix_Char_Per_Turn .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("numberCharPerTern",     self.DS_Helix_Char_Per_Turn.value()))
-            self.DS_Helix_Loops         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("loopsHelix",            self.DS_Helix_Loops.value()))
+            self.CB_Helix               .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("helixEnable",             self.CB_Helix.isChecked()))
+            self.DS_Helix_Base          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("helixBase",               self.DS_Helix_Base.value()))
+            self.DS_Helix_End           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("helixEnd",                self.DS_Helix_End.value()))
+            self.DS_Helix_Pitch         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("helixPitch",              self.DS_Helix_Pitch.value()))
+            self.DS_Helix_Char_Per_Turn .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("numberCharPerTern",       self.DS_Helix_Char_Per_Turn.value()))
+            self.DS_Helix_Loops         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("helixLoops",              self.DS_Helix_Loops.value()))
 
-            extrude                               = FreeCAD.ParamGet(self.userParams).GetBool("setExtrude",             self.CB_Extrude.isChecked())
+            extrude                               = FreeCAD.ParamGet(self.userParams).GetBool   ("setExtrude",              self.CB_Extrude.isChecked())
             self.CB_Extrude.setChecked(extrude)
-            self.DS_Extrude             .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("extrude",               self.DS_Extrude.value()))
+            self.DS_Extrude             .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("extrude",                 self.DS_Extrude.value()))
             self.DS_Extrude.setEnabled(extrude)
             self.RB_Extrude_Front.setEnabled(extrude)
             self.RB_Extrude_Middle.setEnabled(extrude)
@@ -2501,51 +2489,51 @@ class Ui_MainWindow(QWidget):
             self.GB_Extrude_Align.setEnabled(extrude)
             self.CB_Solid.setEnabled(extrude)
 
-            placement                             = FreeCAD.ParamGet(self.userParams).GetBool("setPlacement",           self.CB_Sp_Placement.isChecked())
+            placement                             = FreeCAD.ParamGet(self.userParams).GetBool   ("setPlacement",            self.CB_Sp_Placement.isChecked())
             self.CB_Sp_Placement.setChecked(placement)                                                                  
-            self.DS_PlacementX          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("PlacementX",            self.DS_PlacementX.value()))
-            self.DS_PlacementY          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("PlacementY",            self.DS_PlacementY.value()))
-            self.DS_PlacementZ          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("PlacementZ",            self.DS_PlacementZ.value()))
+            self.DS_PlacementX          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("PlacementX",              self.DS_PlacementX.value()))
+            self.DS_PlacementY          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("PlacementY",              self.DS_PlacementY.value()))
+            self.DS_PlacementZ          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("PlacementZ",              self.DS_PlacementZ.value()))
             self.DS_PlacementX.setEnabled(placement)                                                                    
             self.DS_PlacementY.setEnabled(placement)                                                                    
             self.DS_PlacementZ.setEnabled(placement)                                                                    
 
-            self.DS_InclinationX        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinationX",          self.DS_InclinationX.value()))
-            self.DS_InclinationY        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinationY",          self.DS_InclinationY.value()))
-            self.DS_InclinationZ        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("inclinationZ",          self.DS_InclinationZ.value()))
+            self.DS_InclinationX        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("inclinationX",            self.DS_InclinationX.value()))
+            self.DS_InclinationY        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("inclinationY",            self.DS_InclinationY.value()))
+            self.DS_InclinationZ        .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("inclinationZ",            self.DS_InclinationZ.value()))
 
-            support                               = FreeCAD.ParamGet(self.userParams).GetBool("support",                self.CB_Support.isChecked())
+            support                               = FreeCAD.ParamGet(self.userParams).GetBool   ("support",                 self.CB_Support.isChecked())
             self.CB_Support.setChecked(support)
-            self.DS_Radius_Support      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("radiusSupport",         self.DS_Radius_Support.value()))
-            self.S_Number_Faces_Support .setValue  (FreeCAD.ParamGet(self.userParams).GetInt("nombreFaces",             self.S_Number_Faces_Support.value()))
-            self.DS_Extrude_Support     .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("extrudeSupport",        self.DS_Extrude_Support.value()))
-            self.DS_Rotate_Support    .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("rotateSupport",         self.DS_Rotate_Support.value()))
+            self.DS_Radius_Support      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("radiusSupport",           self.DS_Radius_Support.value()))
+            self.S_Number_Faces_Support .setValue  (FreeCAD.ParamGet(self.userParams).GetInt    ("nombreFaces",             self.S_Number_Faces_Support.value()))
+            self.DS_Extrude_Support     .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("extrudeSupport",          self.DS_Extrude_Support.value()))
+            self.DS_Rotate_Support      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("rotateSupport",           self.DS_Rotate_Support.value()))
             self.DS_Radius_Support.setEnabled(support)
             self.S_Number_Faces_Support.setEnabled(support)
             self.DS_Extrude_Support.setEnabled(support)
             self.DS_Rotate_Support.setEnabled(support)
 
-            self.CB_Points              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("points",                 self.CB_Points          .isChecked()))
-            self.CB_Circle              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("circle",                 self.CB_Circle          .isChecked()))
-            self.CB_BoundBox            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("boundBox",               self.CB_BoundBox        .isChecked()))
-            self.CB_Progression         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("progression",            self.CB_Progression     .isChecked()))
+            self.CB_Points              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("points",                  self.CB_Points          .isChecked()))
+            self.CB_Circle              .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("circle",                  self.CB_Circle          .isChecked()))
+            self.CB_BoundBox            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("boundBox",                self.CB_BoundBox        .isChecked()))
+            self.CB_Progression         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("progression",             self.CB_Progression     .isChecked()))
 
-            self.CB_Solid               .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("solid",                  self.CB_Solid           .isChecked()))
-            self.CB_Live_Update         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("liveUpdate",             self.CB_Live_Update     .isChecked()))
+            self.CB_Solid               .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("solid",                   self.CB_Solid           .isChecked()))
+            self.CB_Live_Update         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("liveUpdate",              self.CB_Live_Update     .isChecked()))
 
-            self.RB_Top_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignTL",            self.RB_Top_Left        .isChecked()))
-            self.RB_Top_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignTM",            self.RB_Top_Mid         .isChecked()))
-            self.RB_Top_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignTR",            self.RB_Top_Right       .isChecked()))
-            self.RB_Mid_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignML",            self.RB_Mid_Left        .isChecked()))
-            self.RB_Mid_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignMM",            self.RB_Mid_Mid         .isChecked()))
-            self.RB_Mid_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignMR",            self.RB_Mid_Right       .isChecked()))
-            self.RB_Bot_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignBL",            self.RB_Bot_Left        .isChecked()))
-            self.RB_Bot_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignBM",            self.RB_Bot_Mid         .isChecked()))
-            self.RB_Bot_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("charAlignBR",            self.RB_Bot_Right       .isChecked()))
+            self.RB_Top_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignTL",             self.RB_Top_Left        .isChecked()))
+            self.RB_Top_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignTM",             self.RB_Top_Mid         .isChecked()))
+            self.RB_Top_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignTR",             self.RB_Top_Right       .isChecked()))
+            self.RB_Mid_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignML",             self.RB_Mid_Left        .isChecked()))
+            self.RB_Mid_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignMM",             self.RB_Mid_Mid         .isChecked()))
+            self.RB_Mid_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignMR",             self.RB_Mid_Right       .isChecked()))
+            self.RB_Bot_Left            .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignBL",             self.RB_Bot_Left        .isChecked()))
+            self.RB_Bot_Mid             .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignBM",             self.RB_Bot_Mid         .isChecked()))
+            self.RB_Bot_Right           .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("charAlignBR",             self.RB_Bot_Right       .isChecked()))
 
-            self.RB_Extrude_Front       .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("extrudeAlignF",          self.RB_Extrude_Front   .isChecked()))
-            self.RB_Extrude_Middle      .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("extrudeAlignM",          self.RB_Extrude_Middle  .isChecked()))
-            self.RB_Extrude_Back        .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("extrudeAlignB",          self.RB_Extrude_Back    .isChecked()))
+            self.RB_Extrude_Front       .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("extrudeAlignF",           self.RB_Extrude_Front   .isChecked()))
+            self.RB_Extrude_Middle      .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("extrudeAlignM",           self.RB_Extrude_Middle  .isChecked()))
+            self.RB_Extrude_Back        .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("extrudeAlignB",           self.RB_Extrude_Back    .isChecked()))
 
         print(__Title__ + ":Done load settings")
 
