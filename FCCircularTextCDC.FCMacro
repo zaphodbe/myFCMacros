@@ -709,9 +709,11 @@ class Ui_MainWindow(QWidget):
         self.sss = None
         self.exs = None
 
+        self.uiUpdateEnabled = True
+
     #### matplotlib beginAngle 2/5 apres __init__ #################################################################
         #### matplotlib font textEdit
-        self.FontTextSize  = 20
+        self.FontTextSize  = 40
         self.fonteComp     = ""
         self.font          = QtGui.QFont()
         self.tableau       = [] #Index (), [chemin plus nom fichier (nomPathPolice), nom sans extension (nomSimple), nomSimpleExt (nomSimple + Ext)]
@@ -767,11 +769,11 @@ class Ui_MainWindow(QWidget):
         self.endAngle           = -270.0                # must exceed the number of characters of text
         self.characterSize      = 2.0                   # size font
 
-        self.exterieur          = 1                     # 1=exteral 0=internal
-        self.baseHelix          = 0.0                   # base of helix
-        self.endHelix           = 0.0                   # end of helix (heigth)
-        self.pitchHelix           = 2.0                   # Pas of helix
-        self.numberCharPerTern  = 10                    # number char by Pas
+        self.helixBase          = 0.0                   # base of helix
+        self.helixEnd           = 0.0                   # end of helix (heigth)
+        self.helixPitch         = 2.0                   # Pas of helix
+        self.helixCharPerTern  = 10                    # number char by Pas
+        self.helixLoops         = 1                     # number of loops 
 
         self.PlacementX         = 0.0                   # Placement character axis X
         self.PlacementY         = 0.0                   # Placement characher axis Y
@@ -783,8 +785,6 @@ class Ui_MainWindow(QWidget):
 
         self.radiusSupport      = self.radius           # diameter support clock
         self.nombreFaces        = 0                     # number Faces of support 0=none 1=circle 2=rectangle 3=triangle 4,5 ... polygon
-        self.roman              = 0                     # number roman or arabic
-        self.redressement       = 0                     # character V or circular
 
         self.extrude            = 0.0                   # extrude character
         self.extrudeSupport     = 0.0                   # extrude support
@@ -935,7 +935,7 @@ class Ui_MainWindow(QWidget):
         self.GB_Text = QtWidgets.QGroupBox()
 
         self.TE_Text = QtWidgets.QTextEdit()
-        self.TE_Text.textChanged.connect(self.on_textEdit_Changed)
+        self.TE_Text.textChanged.connect(self.on_TE_Changed)
 
         self.frame_Option = QtWidgets.QFrame()
         self.frame_Option.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -946,7 +946,7 @@ class Ui_MainWindow(QWidget):
 
         self.CB_Word = QtWidgets.QCheckBox(self.GB_Text)
         self.CB_Word.setText(_fromUtf8("Word"))
-        self.CB_Word.clicked.connect(self.on_textEdit_Changed)
+        self.CB_Word.clicked.connect(self.on_TE_Changed)
 
         self.PB_Help = QtWidgets.QPushButton(MainWindow)
         self.PB_Help.setIcon(QtGui.QIcon(QtGui.QPixmap(helpIcon)))      # help icone dans une variable
@@ -1062,15 +1062,15 @@ class Ui_MainWindow(QWidget):
         self.L_Size_Character = QtWidgets.QLabel()
 
         self.DS_Begin_Angle = QtWidgets.QDoubleSpinBox()
-        self.DS_Begin_Angle.setMinimum(-360.0)
-        self.DS_Begin_Angle.setMaximum(360.0)
+        self.DS_Begin_Angle.setMinimum(-99999999.0)
+        self.DS_Begin_Angle.setMaximum(99999999.0)
         self.DS_Begin_Angle.setValue(self.beginAngle)
         self.DS_Begin_Angle.valueChanged.connect(self.on_DS_Begin_Angle) #connection SpinBox
         self.L_Begin_Angle = QtWidgets.QLabel()
 
         self.DS_End_Angle = QtWidgets.QDoubleSpinBox()
-        self.DS_End_Angle.setMinimum(-360.0)
-        self.DS_End_Angle.setMaximum(360.0)
+        self.DS_End_Angle.setMinimum(-99999999.0)
+        self.DS_End_Angle.setMaximum(99999999.0)
         self.DS_End_Angle.setValue(self.endAngle)
         self.DS_End_Angle.valueChanged.connect(self.on_DS_End_Angle) #connection SpinBox
         self.L_End_Angle = QtWidgets.QLabel()
@@ -1196,35 +1196,42 @@ class Ui_MainWindow(QWidget):
         self.CB_Helix = QtWidgets.QCheckBox()
         self.CB_Helix.toggled.connect(self.on_CB_Helix)
 
-        self.DS_Pitch_Helix = QtWidgets.QDoubleSpinBox()
-        self.DS_Pitch_Helix.setMaximum(99999999.99)
-        self.DS_Pitch_Helix.setValue(self.pitchHelix)
-        self.DS_Pitch_Helix.setEnabled(False)
-        self.DS_Pitch_Helix.valueChanged.connect(self.on_DS_Pitch_Helix) #connection doubleSpinBox
-        self.L_Pitch_Helix = QtWidgets.QLabel()
+        self.DS_Helix_Pitch = QtWidgets.QDoubleSpinBox()
+        self.DS_Helix_Pitch.setMaximum(99999999.99)
+        self.DS_Helix_Pitch.setValue(self.helixPitch)
+        self.DS_Helix_Pitch.setEnabled(False)
+        self.DS_Helix_Pitch.valueChanged.connect(self.on_DS_Helix_Pitch) #connection doubleSpinBox
+        self.L_Helix_Pitch = QtWidgets.QLabel()
 
-        self.DS_Number_Char_Per_Turn = QtWidgets.QSpinBox()
-        self.DS_Number_Char_Per_Turn.setMaximum(99999999)
-        self.DS_Number_Char_Per_Turn.setValue(self.numberCharPerTern)
-        self.DS_Number_Char_Per_Turn.setEnabled(False)
-        self.DS_Number_Char_Per_Turn.valueChanged.connect(self.on_DS_Number_Char_Per_Turn) #connection doubleSpinBox
-        self.L_Number_Char_Per_Turn = QtWidgets.QLabel()
+        self.DS_Helix_Char_Per_Turn = QtWidgets.QDoubleSpinBox()
+        self.DS_Helix_Char_Per_Turn.setMaximum(99999999.0)
+        self.DS_Helix_Char_Per_Turn.setValue(self.helixCharPerTern)
+        self.DS_Helix_Char_Per_Turn.setEnabled(False)
+        self.DS_Helix_Char_Per_Turn.valueChanged.connect(self.on_DS_Helix_Char_Per_Turn) #connection doubleSpinBox
+        self.L_Helix_Char_Per_Turn = QtWidgets.QLabel()
 
-        self.DS_Base_Helix = QtWidgets.QDoubleSpinBox()
-        self.DS_Base_Helix.setMinimum(-99999999.0)
-        self.DS_Base_Helix.setMaximum(99999999.0)
-        self.DS_Base_Helix.setValue(self.baseHelix)
-        self.DS_Base_Helix.setEnabled(False)
-        self.DS_Base_Helix.valueChanged.connect(self.on_DS_Base_Helix) #connection doubleSpinBox
-        self.L_Base_Helix = QtWidgets.QLabel()
+        self.DS_Helix_Base = QtWidgets.QDoubleSpinBox()
+        self.DS_Helix_Base.setMinimum(-99999999.0)
+        self.DS_Helix_Base.setMaximum(99999999.0)
+        self.DS_Helix_Base.setValue(self.helixBase)
+        self.DS_Helix_Base.setEnabled(False)
+        self.DS_Helix_Base.valueChanged.connect(self.on_DS_Helix_Base) #connection doubleSpinBox
+        self.L_Helix_Base = QtWidgets.QLabel()
       
-        self.DS_End_Helix = QtWidgets.QDoubleSpinBox()
-        self.DS_End_Helix.setMinimum(-99999999.0)
-        self.DS_End_Helix.setMaximum(99999999.0)
-        self.DS_End_Helix.setValue(self.endHelix)
-        self.DS_End_Helix.setEnabled(False)
-        self.DS_End_Helix.valueChanged.connect(self.on_DS_End_Helix) #connection doubleSpinBox
-        self.L_End_Helix = QtWidgets.QLabel()
+        self.DS_Helix_End = QtWidgets.QDoubleSpinBox()
+        self.DS_Helix_End.setMinimum(-99999999.0)
+        self.DS_Helix_End.setMaximum(99999999.0)
+        self.DS_Helix_End.setValue(self.helixEnd)
+        self.DS_Helix_End.setEnabled(False)
+        self.DS_Helix_End.valueChanged.connect(self.on_DS_Helix_End) #connection doubleSpinBox
+        self.L_Helix_End = QtWidgets.QLabel()
+
+        self.DS_Helix_Loops = QtWidgets.QDoubleSpinBox()
+        self.DS_Helix_Loops.setMinimum(0)
+        self.DS_Helix_Loops.setMaximum(99999999.0)
+        self.DS_Helix_Loops.setValue(self.helixLoops)
+        self.DS_Helix_Loops.valueChanged.connect(self.on_DS_Helix_Loops) # connection spinBox
+        self.L_Helix_Loops = QtWidgets.QLabel()
 
         ####
         self.GB_Command = QtWidgets.QGroupBox()
@@ -1365,14 +1372,16 @@ class Ui_MainWindow(QWidget):
 
         self.GL_Helix.addWidget(self.CB_Helix, 0, 0, 1, 1)
 
-        self.GL_Helix.addWidget(self.DS_Pitch_Helix, 1, 0, 1, 1)
-        self.GL_Helix.addWidget(self.L_Pitch_Helix, 1, 1, 1, 1)
-        self.GL_Helix.addWidget(self.DS_Number_Char_Per_Turn, 1, 2, 1, 1)
-        self.GL_Helix.addWidget(self.L_Number_Char_Per_Turn, 1, 3, 1, 1)
-        self.GL_Helix.addWidget(self.DS_Base_Helix, 2, 0, 1, 1)
-        self.GL_Helix.addWidget(self.L_Base_Helix, 2, 1, 1, 1)
-        self.GL_Helix.addWidget(self.DS_End_Helix, 2, 2, 1, 1)
-        self.GL_Helix.addWidget(self.L_End_Helix, 2, 3, 1, 1)
+        self.GL_Helix.addWidget(self.DS_Helix_Pitch, 1, 0, 1, 1)
+        self.GL_Helix.addWidget(self.L_Helix_Pitch, 1, 1, 1, 1)
+        self.GL_Helix.addWidget(self.DS_Helix_Char_Per_Turn, 1, 2, 1, 1)
+        self.GL_Helix.addWidget(self.L_Helix_Char_Per_Turn, 1, 3, 1, 1)
+        self.GL_Helix.addWidget(self.DS_Helix_Base, 2, 0, 1, 1)
+        self.GL_Helix.addWidget(self.L_Helix_Base, 2, 1, 1, 1)
+        self.GL_Helix.addWidget(self.DS_Helix_End, 2, 2, 1, 1)
+        self.GL_Helix.addWidget(self.L_Helix_End, 2, 3, 1, 1)
+        self.GL_Helix.addWidget(self.DS_Helix_Loops, 3, 0, 1, 1)
+        self.GL_Helix.addWidget(self.L_Helix_Loops, 3, 1, 1, 1)
 
         #### Command Options
         self.GL_Command = QtWidgets.QGridLayout(self.GB_Command)
@@ -1606,20 +1615,23 @@ class Ui_MainWindow(QWidget):
         self.CB_Helix.setText(_fromUtf8("Enable helix"))
         self.CB_Helix.setToolTip(_fromUtf8("Enable helix support"))
 
-        self.DS_Pitch_Helix.setSuffix(_fromUtf8(" mm"))
-        self.DS_Pitch_Helix.setToolTip(_fromUtf8("Pitch of the text along the helix (min Size Caractere)"))
-        self.L_Pitch_Helix.setText(_fromUtf8("Pitch"))
+        self.DS_Helix_Pitch.setSuffix(_fromUtf8(" mm"))
+        self.DS_Helix_Pitch.setToolTip(_fromUtf8("Pitch of the text along the helix (min Size Caractere)"))
+        self.L_Helix_Pitch.setText(_fromUtf8("Pitch"))
 
-        self.DS_Number_Char_Per_Turn.setToolTip(_fromUtf8("Number of characters for one turn of helix"))
-        self.L_Number_Char_Per_Turn.setText(_fromUtf8("Char. per turn"))
+        self.DS_Helix_Char_Per_Turn.setToolTip(_fromUtf8("Number of characters for one turn of helix"))
+        self.L_Helix_Char_Per_Turn.setText(_fromUtf8("Char. per turn"))
 
-        self.DS_Base_Helix.setToolTip(_fromUtf8("Base (begin) of helix (to activate Step of Helix must be zero)"))
-        self.DS_Base_Helix.setSuffix(_fromUtf8(" mm"))
-        self.L_Base_Helix.setText(_fromUtf8("Base"))
+        self.DS_Helix_Base.setToolTip(_fromUtf8("Base (begin) of helix (to activate Step of Helix must be zero)"))
+        self.DS_Helix_Base.setSuffix(_fromUtf8(" mm"))
+        self.L_Helix_Base.setText(_fromUtf8("Base"))
 
-        self.DS_End_Helix.setToolTip(_fromUtf8("Final height of the helix (to activate Step of Helix must be zero)"))
-        self.DS_End_Helix.setSuffix(_fromUtf8(" mm"))
-        self.L_End_Helix.setText(_fromUtf8("End"))
+        self.DS_Helix_End.setToolTip(_fromUtf8("Final height of the helix (to activate Step of Helix must be zero)"))
+        self.DS_Helix_End.setSuffix(_fromUtf8(" mm"))
+        self.L_Helix_End.setText(_fromUtf8("End"))
+
+        self.DS_Helix_Loops.setToolTip(_fromUtf8("Number of partial or full loops in the helix"))
+        self.L_Helix_Loops.setText(_fromUtf8("Loops"))
 
         ####
         self.GB_Command.setTitle(_fromUtf8("Command"))
@@ -1659,13 +1671,11 @@ class Ui_MainWindow(QWidget):
         
         self.font.setFamily(self.tableau[self.index][5])
         self.font.setPointSize(self.FontTextSize)
-        #self.font.setPointSize(48*64)
         ####
         self.fonteComp   = self.tableau[self.index][1]
         self.fontName = self.tableau[self.index][2]
 
         self.fontMetrics = QtGui.QFontMetrics(self.font)
-        print (self.fontMetrics.ascent(), self.fontMetrics.descent(), self.fontMetrics.height())
 #        FreeCAD.Console.PrintMessage(str(self.index) + " , " + self.tableau[self.index][1] + " , " + self.tableau[self.index][2] + " , ' " + famille + "' , ' " + typeCar + " ' \n")
     #### matplotlib fin 5/5 #################################################################
 
@@ -1688,17 +1698,15 @@ class Ui_MainWindow(QWidget):
     def on_lineEdit_NameFile(self):
 
         self.pathFont = self.lineEdit_NameFile.text() 
-        #print(self.pathFont)
         try:
             self.pathFont  = self.pathFont.split(")") [1]
         except Exception:
             self.pathFont  = self.pathFont
-        #print(self.pathFont)
 
         self.searchFont(self.pathFont)
         QtCore.QObject.connect(self.comboBoxPy, QtCore.SIGNAL("currentIndexChanged(int)"), self.on_fontComboBoxPython)
 
-    def on_textEdit_Changed(self):        #connection textEdit
+    def on_TE_Changed(self):        #connection textEdit
         self.text = self.TE_Text.toPlainText()
 
         try:
@@ -1707,13 +1715,17 @@ class Ui_MainWindow(QWidget):
             selectedEdge = ""
 
         if self.CB_Word.isChecked():
-            length = len(self.text.split(" "))
+            self.textData = self.text.split(" ")
+            self.textLabel = self.textData[0]
+            self.textDataLen = len(self.textData)
             mot = "word"
         else:
-            length = len(self.text)
+            self.textData = self.text
+            self.textLabel = self.textData[0:10]
+            self.textDataLen = len(self.textData)
             mot = "character"
 
-        if length != 1:
+        if self.textDataLen != 1:
             mot += "s"
 
         spaces = self.text.count(" ")
@@ -1723,9 +1735,9 @@ class Ui_MainWindow(QWidget):
             espace = "spaces"
 
         if str(selectedEdge) != "":
-            self.GB_Text.setTitle("Text to be displayed  ( "+str(length)+ " " + mot + " ) ( " + str(spaces) + " " + espace + " ) ( Length " + str(round(selectedEdge.Length,3)) + " mm )")
+            self.GB_Text.setTitle("Text to be displayed  ( "+str(self.textDataLen)+ " " + mot + " ) ( " + str(spaces) + " " + espace + " ) ( Length " + str(round(selectedEdge.Length,3)) + " mm )")
         else:
-            self.GB_Text.setTitle("Text to be displayed  ( "+str(length)+ " " + mot + " ) ( " + str(spaces) + " " + espace + " )")
+            self.GB_Text.setTitle("Text to be displayed  ( "+str(self.textDataLen)+ " " + mot + " ) ( " + str(spaces) + " " + espace + " )")
 
     def on_PB_Reverse(self):        #connection Reverse
         self.text = self.TE_Text.toPlainText()
@@ -1783,19 +1795,23 @@ class Ui_MainWindow(QWidget):
                 ss.Size = value
             FreeCADGui.updateGui()
 
-    def on_DS_Begin_Angle(self,value):          #
+    def on_DS_Begin_Angle(self,value):
         self.beginAngle = value
+        if self.uiUpdateEnabled:
+            self.update_Helix_Loops()
 
-    def on_DS_End_Angle(self,value):            #
+    def on_DS_End_Angle(self,value):
         self.endAngle = value
+        if self.uiUpdateEnabled:
+            self.update_Helix_Loops()
 
-    def on_DS_PlacementX(self,value):          #
+    def on_DS_PlacementX(self,value):
         self.PlacementX = value
 
-    def on_DS_PlacementY(self,value):          #
+    def on_DS_PlacementY(self,value):
         self.PlacementY = value
 
-    def on_DS_PlacementZ(self,value):          #
+    def on_DS_PlacementZ(self,value):
         self.PlacementZ = value
 
     def on_CB_Sp_Placement(self):              # Placement or not Placement
@@ -1805,35 +1821,6 @@ class Ui_MainWindow(QWidget):
             self.DS_PlacementZ.setEnabled(True)
         else:
             self.on_PB_Reset_Placement()
-
-    def on_CB_Support(self,value):
-        self.DS_Radius_Support.setEnabled(value)
-        self.S_Number_Faces_Support.setEnabled(value)
-        self.DS_Extrude_Support.setEnabled(value)
-        self.DS_Rotate_Support.setEnabled(value)
-
-        if value:
-            self.DS_Extrude_Support.setValue(1.0)
-            self.DS_Rotate_Support.setValue(0.0)
-            self.DS_Radius_Support.setValue(self.DS_Radius_Circle.value())
-            self.S_Number_Faces_Support.setValue(1)
-        else:
-            self.DS_Extrude_Support.setValue(0.0)
-            self.DS_Rotate_Support.setValue(0.0)
-            self.DS_Radius_Support.setValue(0.0)
-            self.S_Number_Faces_Support.setValue(0)
-
-    def on_CB_Helix(self,value):
-        self.DS_Pitch_Helix.setEnabled(value)
-        self.DS_Number_Char_Per_Turn.setEnabled(value)
-        self.DS_Base_Helix.setEnabled(value)
-        self.DS_End_Helix.setEnabled(value)
-
-        if not value:
-            self.DS_Pitch_Helix.setValue(0.0)
-            self.DS_Number_Char_Per_Turn.setValue(1.0)
-            self.DS_Base_Helix.setValue(0.0)
-            self.DS_End_Helix.setValue(0.0)
 
     def on_DS_Extrude(self,value):             # 
         self.extrude = value
@@ -1878,39 +1865,115 @@ class Ui_MainWindow(QWidget):
     def on_DS_InclinationZ(self,value):        # 
         self.inclinationZ = value
 
-    #def on_CB_Sp_Inclination(self):            #
-    #    if self.CB_Sp_Inclination.isChecked(): 
-    #        self.DS_InclinationX.setEnabled(True)
-    #        self.DS_InclinationY.setEnabled(True)
-    #        self.DS_InclinationZ.setEnabled(True)
-    #    else:
-    #        self.on_PB_Reset_Inclination()
+    #### Helix update functions
+    def on_CB_Helix(self,value):
+        self.DS_Helix_Pitch.setEnabled(value)
+        self.DS_Helix_Char_Per_Turn.setEnabled(value)
+        self.DS_Helix_Base.setEnabled(value)
+        self.DS_Helix_End.setEnabled(value)
+        self.DS_Helix_Loops.setEnabled(value)
 
-    def on_DS_Pitch_Helix(self,value):   # 
-        self.pitchHelix = value
-        if self.pitchHelix == 0:
-            self.baseHelix = self.endHelix = 0.0
-            self.DS_Base_Helix.setValue(self.baseHelix)
-            self.DS_Base_Helix.setEnabled(True)
-            self.DS_End_Helix.setValue(self.endHelix)
-            self.DS_End_Helix.setEnabled(True)
+        if not value:
+            self.DS_Helix_Pitch.setValue(0.0)
+            self.DS_Helix_Char_Per_Turn.setValue(1.0)
+            self.DS_Helix_Base.setValue(0.0)
+            self.DS_Helix_End.setValue(0.0)
+
+        self.update_Helix_Loops()
+        self.update_Helix_Char_Per_Turn()
+
+    def on_DS_Helix_Pitch(self,value):
+        self.helixPitch = value
+        if self.uiUpdateEnabled:
+            self.update_Helix_End()
+
+    def on_DS_Helix_Char_Per_Turn(self,value):
+        self.helixCharPerTern = value
+
+    def on_DS_Helix_Base(self,value):
+        self.helixBase = value
+        if self.uiUpdateEnabled:
+            self.update_Helix_End()
+
+    def on_DS_Helix_End(self,value):
+        self.helixEnd = value
+        if self.uiUpdateEnabled:
+            self.update_Helix_Pitch()
+
+    def on_DS_Helix_Loops(self,value):
+        self.helixLoops = value
+        if self.uiUpdateEnabled:
+            self.update_Helix_Pitch()
+            self.update_Helix_Angle()
+
+    def update_Helix_Pitch(self):
+        self.uiUpdateEnabled = False
+        if self.CB_Helix.isChecked():
+            helixPitch = (self.helixEnd - self.helixBase) / self.helixLoops
+            self.DS_Helix_Pitch.setValue(helixPitch)
         else:
-            self.baseHelix = self.endHelix = 0.0
-            self.DS_Base_Helix.setValue(self.baseHelix)
-            self.DS_Base_Helix.setEnabled(False)
-            self.DS_End_Helix.setValue(self.endHelix)
-            self.DS_End_Helix.setEnabled(False)
+            self.DS_Helix_Pitch.setValue(0.0)
+        self.DS_Helix_Pitch.repaint()
+        self.uiUpdateEnabled = True
 
-    def on_DS_Number_Char_Per_Turn(self,value):# 
-        self.numberCharPerTern = value
+    def update_Helix_Char_Per_Turn(self):
+        self.uiUpdateEnabled = False
+        if self.CB_Helix.isChecked():
+            chars = (self.textDataLen - 1) or 1.0
+            charsPerTurn = 360.0 / (abs(self.endAngle - self.beginAngle) / chars)
+            self.DS_Helix_Char_Per_Turn.setValue(charsPerTurn)
+        else:
+            self.DS_Helix_Char_Per_Turn.setValue(1.0)
+        self.DS_Helix_Char_Per_Turn.repaint()
+        self.uiUpdateEnabled = True
 
-    def on_DS_Base_Helix(self,value):          # 
-        self.baseHelix = value
+    def update_Helix_End(self):
+        self.uiUpdateEnabled = False
+        if self.CB_Helix.isChecked():
+            helixEnd = self.helixBase + self.helixPitch * self.helixLoops
+            self.DS_Helix_End.setValue(helixEnd)
+        else:
+            self.DS_Helix_End.setValue(0.0)
+        self.DS_Helix_End.repaint()
+        self.uiUpdateEnabled = True
 
-    def on_DS_End_Helix(self,value):           # 
-        self.endHelix = value
+    def update_Helix_Loops(self):
+        self.uiUpdateEnabled = False
+        loops = abs(self.endAngle - self.beginAngle) / 360.0
+        self.DS_Helix_Loops.setValue(loops)
+        self.DS_Helix_Loops.repaint()
+        self.uiUpdateEnabled = True
+        self.update_Helix_Char_Per_Turn()
 
-    def on_DS_Radius_Support(self,value):      #  Clock
+    def update_Helix_Angle(self):
+        self.uiUpdateEnabled = False
+        if self.CB_Helix.isChecked():
+            sign = (self.endAngle - self.beginAngle) / abs(self.endAngle - self.beginAngle)
+            angle = self.beginAngle + sign * self.helixLoops * 360.0
+            self.DS_End_Angle.setValue(angle)
+            self.DS_End_Angle.repaint()
+        self.uiUpdateEnabled = True
+        self.update_Helix_Char_Per_Turn()
+
+    #### Support update functions
+    def on_CB_Support(self,value):
+        self.DS_Radius_Support.setEnabled(value)
+        self.S_Number_Faces_Support.setEnabled(value)
+        self.DS_Extrude_Support.setEnabled(value)
+        self.DS_Rotate_Support.setEnabled(value)
+
+        if value:
+            self.DS_Extrude_Support.setValue(1.0)
+            self.DS_Rotate_Support.setValue(0.0)
+            self.DS_Radius_Support.setValue(self.DS_Radius_Circle.value())
+            self.S_Number_Faces_Support.setValue(1)
+        else:
+            self.DS_Extrude_Support.setValue(0.0)
+            self.DS_Rotate_Support.setValue(0.0)
+            self.DS_Radius_Support.setValue(0.0)
+            self.S_Number_Faces_Support.setValue(0)
+
+    def on_DS_Radius_Support(self,value):
         self.radiusSupport = value
 
     def on_S_Number_Faces_Support(self,value): # number Faces of support 0=none 1=circle 2=rectangle 3=triangle 4,5 ... polygon
@@ -1983,18 +2046,18 @@ class Ui_MainWindow(QWidget):
         self.DS_InclinationZ.setValue(self.inclinationZ)
 
         self.CB_Helix.setEnabled(False)
-        self.DS_Base_Helix.setValue(self.baseHelix)
-        self.DS_Base_Helix.setEnabled(False)
-        self.DS_End_Helix.setValue(self.endHelix)
-        self.DS_Base_Helix.setEnabled(False)
-        self.DS_Pitch_Helix.setValue(self.pitchHelix)
-        self.DS_Number_Char_Per_Turn.setValue(self.numberCharPerTern)
+        self.DS_Helix_Base.setValue(self.helixBase)
+        self.DS_Helix_Base.setEnabled(False)
+        self.DS_Helix_End.setValue(self.helixEnd)
+        self.DS_Helix_Base.setEnabled(False)
+        self.DS_Helix_Pitch.setValue(self.helixPitch)
+        self.DS_Helix_Char_Per_Turn.setValue(self.helixCharPerTern)
 
         self.CB_Support.setChecked(False)
 
         self.RB_Mid_Mid.setChecked(True)
 
-        self.on_textEdit_Changed()
+        self.on_TE_Changed()
 
         self.window.repaint()
 
@@ -2014,13 +2077,6 @@ class Ui_MainWindow(QWidget):
         if doc == None:
             doc = FreeCAD.newDocument()
 
-        if self.CB_Word.isChecked():
-            textData = self.text.split(" ")
-            textLabel = textData[0]
-        else:
-            textData = self.text
-            textLabel = textData[0:10]
-
 #### Path
 
         # create text on wire, arc, circle edge... 
@@ -2037,20 +2093,20 @@ class Ui_MainWindow(QWidget):
 
         if (len(ssel) != 0) and (passNoOk == 0):
             
-            FcString = doc.addObject("App::DocumentObjectGroup","FcStringP_" + textLabel)
+            FcString = doc.addObject("App::DocumentObjectGroup","FcStringP_" + self.textLabel)
             if self.CB_Points.isChecked():
-                FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + textLabel)
+                FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + self.textLabel)
 
             try:
-                numberOfPoints = len(textData)                                                        # Decomposition number (or precision you can change)
-                points = selectedEdge.discretize(numberOfPoints)                                   # discretize the element
+                numberOfPoints = self.textDataLen                   # Decomposition number (or precision you can change)
+                points = selectedEdge.discretize(numberOfPoints)    # discretize the element
                 pasTab = 0
                 
-                for position in range(len(textData)):                                                             # list and display the coordinates
+                for position in range(self.textDataLen):                                                             # list and display the coordinates
     
-                    ss=Draft.makeShapeString(String=textData[position],FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
+                    ss=Draft.makeShapeString(String=self.textData[position],FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
 
-                    ss.Label = textData[position]
+                    ss.Label = self.textData[position]
                     Draft.autogroup(ss)
                     FcString.addObject(ss)  # contener character
                     self.sss.append(ss)
@@ -2077,7 +2133,7 @@ class Ui_MainWindow(QWidget):
                     #    ##Extract macro_Perpendicular_To_Wire
                     #    if pasTab == 0:
                     #        pointsDirection = []
-                    #        pointsDirection = lineSelected.discretize(Number = ((len(textData)-1) * 10))                   # discretize the path line first selection
+                    #        pointsDirection = lineSelected.discretize(Number = ((len(self.textData)-1) * 10))                   # discretize the path line first selection
                     #        pasTab = 1
                     #    try:
                     #        v=pointsDirection[position*10].sub(pointsDirection[(position*10) + 1])                            # avec vecteurs 1 et 2 (direction beginAngle ligne)
@@ -2097,7 +2153,7 @@ class Ui_MainWindow(QWidget):
                     ####
                     if self.extrude > 0:         # extrusion characrters
                         CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                        CharExtrude.Label = textData[position]
+                        CharExtrude.Label = self.textData[position]
                         CharExtrude.Placement = plm 
                         try:
                             CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
@@ -2128,10 +2184,10 @@ class Ui_MainWindow(QWidget):
                     if self.CB_Points.isChecked():
                         pointRepere = Draft.makePoint(plm.Base)
                         pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
-                        pointRepere.Label = textData[position]
+                        pointRepere.Label = self.textData[position]
                         FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
                         FcStringPoints.addObject(pointRepere)
-                    ####DS_Number_Char_Per_Turn
+                    ####DS_Helix_Char_Per_Turn
                     if self.CB_Progression.isChecked():
                         FreeCADGui.updateGui()                                 # rafraichi l'ecran
                     ####
@@ -2145,132 +2201,116 @@ class Ui_MainWindow(QWidget):
             ligne = Draft.makeWire(vecligne,closed=False,face=False,support=None)     # creation de la ligne de base
             lineName = ligne.Name
     
-            nombre = len(textData)
+            nombre = self.textDataLen
 
             coorZ = self.PlacementZ
                
-            if self.exterieur == 2:        # helix
-                if self.numberCharPerTern == 0:
-                    self.numberCharPerTern = 1
-                    FreeCAD.Console.PrintError("Insufficient number"+"\n")
-                pas = 0.0
-                nombre = self.numberCharPerTern
-                if self.pitchHelix != 0:
-                    pas = self.pitchHelix / (self.numberCharPerTern)
-                else:
-                    pas = ((((self.endHelix - self.characterSize)-self.baseHelix)/(len(textData) / self.numberCharPerTern))/(self.numberCharPerTern)) # pas of helix
-                    coorZ += self.baseHelix
-            else:
-                self.numberCharPerTern = 1
-
-            FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + textLabel)
+            FcString = doc.addObject("App::DocumentObjectGroup","FcString_" + self.textLabel)
             if self.CB_Points.isChecked():
-                FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + textLabel)
+                FcStringPoints = doc.addObject("App::DocumentObjectGroup","FcStringPoints_" + self.textLabel)
 
             ####Boucle principale############################################################################
-            loops = int(len(textData) / self.numberCharPerTern)
-            print("len(textData),loops",len(textData),loops)
+            loops = int(self.textDataLen / self.helixCharPerTern)
     
     #        if (len(text) % numberCharPerTern) != 0: # calcul number spires Helix
     #            boucler += 1
     
-            position = -1
+            #position = -1
             for loop in range(loops):
-                ii = -1
+                #ii = -1
 
                 angleTr = self.beginAngle
+                coorZ = self.PlacementZ + self.helixBase
+
                 if nombre > 1:
                     angleInc = (self.endAngle - self.beginAngle)/(nombre - 1)
+                    zInc = (self.helixEnd - self.helixBase)/(nombre - 1)
                 else:
-                    andleInc = 0
+                    angleInc = 0
+                    zInc = 0
 
-                while ((self.beginAngle <= self.endAngle and angleTr < self.endAngle + angleInc) or (self.beginAngle > self.endAngle and angleTr > self.endAngle + angleInc)):
-                    ii  += 1
-                    position += 1
+                for string in self.textData:
                     ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
     
                     a = ligne.End # fin de ligne
                     coorX = a[0]
                     coorY = a[1]
-                    coorZ = a[2]
+                    #coorZ = a[2]
     
-                    if (ii < nombre) and (position < len(textData)):    
-                        ss=Draft.makeShapeString(String=textData[position],FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
-    
-                        ss.Label = textData[position]
-                        Draft.autogroup(ss)
-    
-                        lengthX  = ss.Shape.BoundBox.XLength
-                        #lengthY  = ss.Shape.BoundBox.YLength
-                        lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
-                        lengthZ  = ss.Shape.BoundBox.ZLength # N.B. Should always be 0
-                        centreX  = lengthX * self.charAlignMultipliers[0]
-                        centreY  = lengthY * self.charAlignMultipliers[1]
-                        centreZ  = lengthZ * self.charAlignMultipliers[2]
-                        coorX   -= centreX
-                        coorY   -= centreY
-                        coorZ   -= centreZ
-                        rotX     = self.inclinationX
-                        rotY     = self.inclinationY
-                        rotZ     = self.inclinationZ
+                    ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
 
-                        if not self.CB_Fixed_Angle.isChecked():
-                            rotX += angleTr
-    
-                        plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
+                    ss.Label = string
+                    Draft.autogroup(ss)
 
-                        ####
-                        if self.extrude != 0:         # extrusion characrters
-                            extrudeUp = self.extrude * self.extrudeAlignMultiplier
-                            extrudeDn = self.extrude - extrudeUp
+                    lengthX  = ss.Shape.BoundBox.XLength
+                    lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
+                    centreX  = lengthX * self.charAlignMultipliers[0]
+                    centreY  = lengthY * self.charAlignMultipliers[1]
+                    coorX   -= centreX
+                    coorY   -= centreY
 
-                            CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                            CharExtrude.LengthFwd = extrudeUp
-                            CharExtrude.LengthRev = extrudeDn
-                            CharExtrude.Label = textData[position]
-                            CharExtrude.Placement = plm 
-                            CharExtrude.Solid = self.CB_Solid.isChecked()
+                    rotX     = self.inclinationX
+                    rotY     = self.inclinationY
+                    rotZ     = self.inclinationZ
 
-                            try:
-                                CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
-                            except Exception:
-                                None
+                    if not self.CB_Fixed_Angle.isChecked():
+                        rotX += angleTr
 
-                            if self.CB_BoundBox.isChecked():
-                                CharExtrude.ViewObject.BoundingBox = True
+                    plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,0.0)) # pitch,roll...1
 
-                            FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
+                    ####
+                    if self.extrude != 0:         # extrusion characrters
+                        extrudeUp = self.extrude * self.extrudeAlignMultiplier
+                        extrudeDn = self.extrude - extrudeUp
 
-                            comP.append(CharExtrude.Shape)
-                            FcString.addObject(CharExtrude)  # contener extrude
-                            self.exs.append(CharExtrude)
-                        else:                 # 
-                            ss.Placement=plm 
-                            ss.Support=None
-                            try:
-                                ss.ViewObject.DisplayMode = u"Flat Lines"
-                            except Exception:
-                                None
+                        CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
+                        CharExtrude.LengthFwd = extrudeUp
+                        CharExtrude.LengthRev = extrudeDn
+                        CharExtrude.Label = string
+                        CharExtrude.Placement = plm 
+                        CharExtrude.Solid = self.CB_Solid.isChecked()
 
-                            if self.CB_BoundBox.isChecked():
-                                ss.ViewObject.BoundingBox = True
+                        try:
+                            CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
+                        except Exception:
+                            None
 
-                            comP.append(ss.Shape)
-                            FcString.addObject(ss)  # contener character
-                            self.sss.append(ss)
-                        ####
-                        if self.CB_Points.isChecked():
-                            pointRepere = Draft.makePoint(plm.Base)
-                            pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
-                            pointRepere.Label = textData[position]
-                            FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
-                            FcStringPoints.addObject(pointRepere)
-                        ####    
-                        if self.CB_Progression.isChecked():
-                            FreeCADGui.updateGui()                                 # rafraichi l'ecran
-                        ####
+                        if self.CB_BoundBox.isChecked():
+                            CharExtrude.ViewObject.BoundingBox = True
+
+                        FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
+
+                        comP.append(CharExtrude.Shape)
+                        FcString.addObject(CharExtrude)  # contener extrude
+                        self.exs.append(CharExtrude)
+                    else:                 # 
+                        ss.Placement=plm 
+                        ss.Support=None
+                        try:
+                            ss.ViewObject.DisplayMode = u"Flat Lines"
+                        except Exception:
+                            None
+
+                        if self.CB_BoundBox.isChecked():
+                            ss.ViewObject.BoundingBox = True
+
+                        comP.append(ss.Shape)
+                        FcString.addObject(ss)  # contener character
+                        self.sss.append(ss)
+                    ####
+                    if self.CB_Points.isChecked():
+                        pointRepere = Draft.makePoint(plm.Base)
+                        pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
+                        pointRepere.Label = string
+                        FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
+                        FcStringPoints.addObject(pointRepere)
+                    ####    
+                    if self.CB_Progression.isChecked():
+                        FreeCADGui.updateGui()                                 # rafraichi l'ecran
+                    ####
 
                     angleTr += angleInc
+                    coorZ   += zInc
 
             #BSpline = Draft.makeBSpline(points,closed=False)                  # makeBSpline repere
             FreeCAD.ActiveDocument.removeObject(lineName)     # remove ligne de base directrice
@@ -2278,7 +2318,7 @@ class Ui_MainWindow(QWidget):
         if (self.CB_Circle.isChecked()) and (passNoOk == 0):
             plm = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),0), FreeCAD.Vector(0,0,0))
             circle = Draft.makeCircle(radius=self.radius, placement=plm, face=False, support=None)
-            circle.Label = textLabel
+            circle.Label = self.textLabel
             circle.ViewObject.LineColor = (1.0,0.,0.0)
             Draft.autogroup(circle)
 
@@ -2339,7 +2379,6 @@ class Ui_MainWindow(QWidget):
     def on_PB_Help_clicked(self):
         WebGui.openBrowser("https://wiki.freecadweb.org/Macro_FCCircularText")
         FreeCAD.Console.PrintMessage("https://wiki.freecadweb.org/Macro_FCCircularText" + "\n")
-#        print("Help ")
 
     def on_PB_Exit(self):                      # Exit
         global s
@@ -2371,13 +2410,12 @@ class Ui_MainWindow(QWidget):
         FreeCAD.ParamGet(self.userParams).SetFloat   ("endAngle",                self.DS_End_Angle.value())
         FreeCAD.ParamGet(self.userParams).SetFloat   ("characterSize",           self.DS_Size_Character.value())
 
-        FreeCAD.ParamGet(self.userParams).SetInt     ("exterieur",               self.exterieur)
-
-        FreeCAD.ParamGet(self.userParams).SetBool    ("enableHelix",             self.CB_Helix.isChecked())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("baseHelix",               self.DS_Base_Helix.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("endHelix",                self.DS_End_Helix.value())
-        FreeCAD.ParamGet(self.userParams).SetFloat   ("pitchHelix",              self.DS_Pitch_Helix.value())
-        FreeCAD.ParamGet(self.userParams).SetInt     ("numberCharPerTern",       self.DS_Number_Char_Per_Turn.value())
+        FreeCAD.ParamGet(self.userParams).SetBool    ("helixEnable",             self.CB_Helix.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixBase",               self.DS_Helix_Base.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixEnd",                self.DS_Helix_End.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixPitch",              self.DS_Helix_Pitch.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("numberCharPerTern",       self.DS_Helix_Char_Per_Turn.value())
+        FreeCAD.ParamGet(self.userParams).SetFloat   ("helixLoops",              self.DS_Helix_Loops.value())
 
         FreeCAD.ParamGet(self.userParams).SetBool    ("setExtrude",              self.CB_Extrude.isChecked())
         FreeCAD.ParamGet(self.userParams).SetFloat   ("extrude",                 self.DS_Extrude.value())
@@ -2446,13 +2484,12 @@ class Ui_MainWindow(QWidget):
             self.DS_End_Angle           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endAngle",              self.DS_End_Angle.value()))
             self.DS_Size_Character      .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("characterSize",         self.DS_Size_Character.value()))
 
-            self.exterieur                        = FreeCAD.ParamGet(self.userParams).GetInt("exterieur",               self.exterieur)
-
             self.CB_Helix               .setChecked(FreeCAD.ParamGet(self.userParams).GetBool("enableHelix",            self.CB_Helix.isChecked()))
-            self.DS_Base_Helix          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("baseHelix",             self.DS_Base_Helix.value()))
-            self.DS_End_Helix           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endHelix",              self.DS_End_Helix.value()))
-            self.DS_Pitch_Helix         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("pitchHelix",            self.DS_Pitch_Helix.value()))
-            self.DS_Number_Char_Per_Turn.setValue  (FreeCAD.ParamGet(self.userParams).GetInt("numberCharPerTern",       self.DS_Number_Char_Per_Turn.value()))
+            self.DS_Helix_Base          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("baseHelix",             self.DS_Helix_Base.value()))
+            self.DS_Helix_End           .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("endHelix",              self.DS_Helix_End.value()))
+            self.DS_Helix_Pitch         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("pitchHelix",            self.DS_Helix_Pitch.value()))
+            self.DS_Helix_Char_Per_Turn .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("numberCharPerTern",     self.DS_Helix_Char_Per_Turn.value()))
+            self.DS_Helix_Loops         .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat("loopsHelix",            self.DS_Helix_Loops.value()))
 
             extrude                               = FreeCAD.ParamGet(self.userParams).GetBool("setExtrude",             self.CB_Extrude.isChecked())
             self.CB_Extrude.setChecked(extrude)
