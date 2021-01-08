@@ -2099,13 +2099,12 @@ class Ui_MainWindow(QWidget):
 
         if (len(ssel) != 0) and (passNoOk == 0):            
             try:
-                numberOfPoints = self.textDataLen                   # Decomposition number (or precision you can change)
+                numberOfPoints = ((self.textDataLen - 1) * 10) + 1
                 points = selectedEdge.discretize(numberOfPoints)    # discretize the element
-                pasTab = 0
                 
                 for position in range(self.textDataLen):
                     string = self.textData[position]
-                    point  = points[position]
+                    point  = points[position * 10]
     
                     ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
                     ss.Label = string
@@ -2124,34 +2123,17 @@ class Ui_MainWindow(QWidget):
                     rotX     = self.inclinationX
                     rotY     = self.inclinationY
                     rotZ     = self.inclinationZ
-                
-                    #if self.RB_Path_Orthogonal.isChecked():
-                    #    #plm.Base=FreeCAD.Vector(points[position][0] - (XXLongueur), points[position][1] - (YYLongueur), points[position][2])
-                    #    #plm.Base=FreeCAD.Vector(points[position][0] + (XXLongueur), points[position][1] + (YYLongueur), points[position][2])
-                    #    plm.Rotation = FreeCAD.Rotation(inclinationX, inclinationY, inclinationZ)
-                    #    plm = plm.multiply(FreeCAD.Placement(FreeCAD.Vector(PlacementX, PlacementY, PlacementZ), FreeCAD.Rotation(0, 0, 0), FreeCAD.Vector(0,0,0)))
-                    #else:
-                    #    ##Extract macro_Perpendicular_To_Wire
-                    #    if pasTab == 0:
-                    #        pointsDirection = []
-                    #        pointsDirection = lineSelected.discretize(Number = ((len(self.textData)-1) * 10))                   # discretize the path line first selection
-                    #        pasTab = 1
-                    #    try:
-                    #        v=pointsDirection[position*10].sub(pointsDirection[(position*10) + 1])                            # avec vecteurs 1 et 2 (direction beginAngle ligne)
-                    #    except Exception:
-                    #        v=pointsDirection[-2].sub(pointsDirection[-1])                            # avec vecteurs 1 et 2 (direction beginAngle ligne)
-                    #        
-                    #    r=FreeCAD.Rotation(FreeCAD.Vector(1,0,0),v)
-                    #    plm.Rotation.Q = r.Q
-                    #    plm = plm.multiply(FreeCAD.Placement(FreeCAD.Vector(0,0,0), FreeCAD.Rotation(inclinationX, inclinationY, inclinationZ), FreeCAD.Vector(0,0,0)))
-                    #
-                    #    try:
-                    #        plm.Base = pointsDirection[position*10]
-                    #    except Exception:
-                    #        plm.Base = pointsDirection[-1]
-                    #    plm = plm.multiply(FreeCAD.Placement(FreeCAD.Vector(centreX + PlacementX, centreY + PlacementY, centreZ + PlacementZ), FreeCAD.Rotation(correctionAngle, 0, 0), FreeCAD.Vector(0,0,0)))
 
-                    plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
+                    if not self.CB_Fixed_Angle.isChecked():
+                        idx = (position * 10) or 1
+                        vect = points[idx].sub(points[idx - 1])
+                        rot = FreeCAD.Rotation(FreeCAD.Vector(1,0,0),vect).toEuler()
+
+                        rotX     += rot[0]
+                        rotY     += rot[1]
+                        rotZ     += rot[2]
+
+                    plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ))
 
                     ####
                     if self.extrude != 0:         # extrusion characrters
