@@ -972,30 +972,32 @@ class Ui_MainWindow(QWidget):
 
         self.PB_Incl_Flat_Inside = QtWidgets.QPushButton()
         self.PB_Incl_Flat_Inside.setIcon(QtGui.QIcon(QtGui.QPixmap(flatInsideIcon)))
-        self.PB_Incl_Flat_Inside.inclinations = [-90.0, 0.0, 0.0]
+        self.PB_Incl_Flat_Inside.inclinations = [90.0, 0.0, 0.0]
         self.PB_Incl_Flat_Inside.clicked.connect(self.on_PB_Incl)
 
         self.PB_Incl_Flat_Outside = QtWidgets.QPushButton()
         self.PB_Incl_Flat_Outside.setIcon(QtGui.QIcon(QtGui.QPixmap(flatOutsideIcon)))
-        self.PB_Incl_Flat_Outside.inclinations = [90.0, 0.0, 0.0]
+        self.PB_Incl_Flat_Outside.inclinations = [-90.0, 0.0, 0.0]
         self.PB_Incl_Flat_Outside.clicked.connect(self.on_PB_Incl)
 
         self.PB_Incl_Stand_Inside = QtWidgets.QPushButton()
         self.PB_Incl_Stand_Inside.setIcon(QtGui.QIcon(QtGui.QPixmap(standInsideIcon)))
-        self.PB_Incl_Stand_Inside.inclinations = [-90.0, 0.0, 90.0]
+        self.PB_Incl_Stand_Inside.inclinations = [90.0, 0.0, 90.0]
         self.PB_Incl_Stand_Inside.clicked.connect(self.on_PB_Incl)
 
         self.PB_Incl_Stand_Outside = QtWidgets.QPushButton()
         self.PB_Incl_Stand_Outside.setIcon(QtGui.QIcon(QtGui.QPixmap(standOutsideIcon)))
-        self.PB_Incl_Stand_Outside.inclinations = [90.0, 0.0, 90.0]
+        self.PB_Incl_Stand_Outside.inclinations = [-90.0, 0.0, 90.0]
         self.PB_Incl_Stand_Outside.clicked.connect(self.on_PB_Incl)
 
         self.PB_ClockArabic = QtWidgets.QPushButton()
         self.PB_ClockArabic.setIcon(QtGui.QIcon(QtGui.QPixmap(arabicIcon)))
+        self.PB_ClockArabic.inclinations = [90.0, 0.0, 0.0]
         self.PB_ClockArabic.clicked.connect(self.on_PB_ClockArabic)
 
         self.PB_ClockRoman = QtWidgets.QPushButton()
         self.PB_ClockRoman.setIcon(QtGui.QIcon(QtGui.QPixmap(romanIcon)))
+        self.PB_ClockRoman.inclinations = [90.0, 0.0, 0.0]
         self.PB_ClockRoman.clicked.connect(self.on_PB_ClockRoman)
 
         ## Character alignment area
@@ -1759,9 +1761,11 @@ class Ui_MainWindow(QWidget):
 
     def on_PB_ClockArabic(self):
         self.on_PB_Clock("1 2 3 4 5 6 7 8 9 10 11 12")
+        self.on_PB_Incl()
 
     def on_PB_ClockRoman(self):
         self.on_PB_Clock("I II III IV V VI VII VIII IX X XI XII")
+        self.on_PB_Incl()
 
     def on_PB_Incl(self):
         button = self.sender()
@@ -2120,7 +2124,7 @@ class Ui_MainWindow(QWidget):
                     coorY    = point[1] - centreY
                     coorZ    = point[2] - centreZ
 
-                    rotX     = self.inclinationX
+                    rotX     = self.inclinationX - 90.0  # The -90.0 corrects the orientation to be inline with the line
                     rotY     = self.inclinationY
                     rotZ     = self.inclinationZ
 
@@ -2224,7 +2228,7 @@ class Ui_MainWindow(QWidget):
                 coorY    = point[1] - centreY
                 #coorZ    = point[2] - centreZ
 
-                rotX     = self.inclinationX
+                rotX     = self.inclinationX - 180.0  # The -180.0 corrects the orientation to be inline with the circle/helix
                 rotY     = self.inclinationY
                 rotZ     = self.inclinationZ
 
