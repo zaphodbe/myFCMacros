@@ -1116,8 +1116,8 @@ class Ui_MainWindow(QWidget):
         self.DS_PlacementZ.setValue(self.PlacementZ)
         self.DS_PlacementZ.valueChanged.connect(self.on_DS_PlacementZ) #connection doubleSpinBox
 
-        self.CB_Sp_Placement = QtWidgets.QCheckBox()
-        self.CB_Sp_Placement.clicked.connect(self.on_CB_Sp_Placement) #connection checkBox
+        self.CB_Placement = QtWidgets.QCheckBox()
+        self.CB_Placement.clicked.connect(self.on_CB_Placement) #connection checkBox
 
         self.DS_InclinationX = QtWidgets.QDoubleSpinBox()
         self.DS_InclinationX.setMinimum(-360.0)
@@ -1335,7 +1335,7 @@ class Ui_MainWindow(QWidget):
         self.GL_Options.addWidget(self.DS_PlacementX, 0, 0, 1, 1)
         self.GL_Options.addWidget(self.DS_PlacementY, 0, 1, 1, 1)
         self.GL_Options.addWidget(self.DS_PlacementZ, 0, 2, 1, 1)
-        self.GL_Options.addWidget(self.CB_Sp_Placement, 0, 3, 1, 1)
+        self.GL_Options.addWidget(self.CB_Placement, 0, 3, 1, 1)
 
         self.GL_Options.addWidget(self.DS_InclinationX, 1, 0, 1, 1)
         self.GL_Options.addWidget(self.DS_InclinationY, 1, 1, 1, 1)
@@ -1555,8 +1555,8 @@ class Ui_MainWindow(QWidget):
         self.DS_PlacementY.setToolTip(_fromUtf8("Placement direction Y"))
         self.DS_PlacementZ.setSuffix(_fromUtf8(" Z mm"))
         self.DS_PlacementZ.setToolTip(_fromUtf8("Placement direction Z"))
-        self.CB_Sp_Placement.setText(_fromUtf8("Placement"))
-        self.CB_Sp_Placement.setToolTip(_fromUtf8("Placement of character in the choice"))
+        self.CB_Placement.setText(_fromUtf8("Placement"))
+        self.CB_Placement.setToolTip(_fromUtf8("Placement of character in the choice"))
         #carDegrees = b' \xc2\xb0'.decode("utf-8")    #thanks wmayer	https://forum.freecadweb.org/viewtopic.php?f=13&t=36380&p=308476#p308357
 
         #### Inclination Items
@@ -1779,16 +1779,6 @@ class Ui_MainWindow(QWidget):
             self.DS_InclinationX.setValue(0.0)
             self.DS_InclinationX.repaint()
 
-    def on_PB_Reset_Placement(self):           # Reset_Placement
-        self.PlacementX = self.PlacementY = self.PlacementZ = 0.0
-        self.CB_Sp_Placement.setChecked(False)
-        self.DS_PlacementX.setValue(self.PlacementX)
-        self.DS_PlacementX.setEnabled(False)
-        self.DS_PlacementY.setValue(self.PlacementY)
-        self.DS_PlacementY.setEnabled(False)
-        self.DS_PlacementZ.setValue(self.PlacementZ)
-        self.DS_PlacementZ.setEnabled(False)
-        
     def on_DS_Radius_Circle(self,value):
         self.radius = value  
         self.radiusSupport = value
@@ -1820,13 +1810,15 @@ class Ui_MainWindow(QWidget):
     def on_DS_PlacementZ(self,value):
         self.PlacementZ = value
 
-    def on_CB_Sp_Placement(self):              # Placement or not Placement
-        if self.CB_Sp_Placement.isChecked(): 
-            self.DS_PlacementX.setEnabled(True)
-            self.DS_PlacementY.setEnabled(True)
-            self.DS_PlacementZ.setEnabled(True)
-        else:
-            self.on_PB_Reset_Placement()
+    def on_CB_Placement(self,value):              # Placement or not Placement
+        self.DS_PlacementX.setEnabled(value)
+        self.DS_PlacementY.setEnabled(value)
+        self.DS_PlacementZ.setEnabled(value)
+        if not value:
+            self.PlacementX = self.PlacementY = self.PlacementZ = 0.0
+            self.DS_PlacementX.setValue(self.PlacementX)
+            self.DS_PlacementY.setValue(self.PlacementY)
+            self.DS_PlacementZ.setValue(self.PlacementZ)
 
     def on_DS_Extrude(self,value):             # 
         self.extrude = value
@@ -2045,7 +2037,7 @@ class Ui_MainWindow(QWidget):
         self.CB_Extrude.setChecked(False)
         self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
 
-        self.on_PB_Reset_Placement()
+        self.CB_Placement.setChecked(False)
 
         self.DS_InclinationX.setValue(self.inclinationX)
         self.DS_InclinationY.setValue(self.inclinationY)
@@ -2093,7 +2085,7 @@ class Ui_MainWindow(QWidget):
         #
         try:
             ssel = FreeCADGui.Selection.getSelectionEx()
-            selectedEdge = lineSelected = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]  # select one element
+            selectedEdge = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]  # select one element
         except Exception:
             selectedEdge = None
             None
@@ -2102,95 +2094,97 @@ class Ui_MainWindow(QWidget):
             passNoOk = 1
 
         if (len(ssel) != 0) and (passNoOk == 0):            
+            numberOfPoints = ((self.textDataLen - 1) * 10) + 1
+
             try:
-                numberOfPoints = ((self.textDataLen - 1) * 10) + 1
                 points = selectedEdge.discretize(numberOfPoints)    # discretize the element
-                
-                for position in range(self.textDataLen):
-                    string = self.textData[position]
-                    point  = points[position * 10]
-    
-                    ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
-                    ss.Label = string
-                    Draft.autogroup(ss)
-
-                    lengthX  = ss.Shape.BoundBox.XLength
-                    lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
-                    lengthZ  = ss.Shape.BoundBox.ZLength
-                    centreX  = lengthX * self.charAlignMultipliers[0]
-                    centreY  = lengthY * self.charAlignMultipliers[1]
-                    centreZ  = lengthZ * self.charAlignMultipliers[2]
-                    coorX    = point[0] - centreX
-                    coorY    = point[1] - centreY
-                    coorZ    = point[2] - centreZ
-
-                    rotX     = self.inclinationX - 90.0  # The -90.0 corrects the orientation to be inline with the line
-                    rotY     = self.inclinationY
-                    rotZ     = self.inclinationZ
-
-                    if not self.CB_Fixed_Angle.isChecked():
-                        idx = (position * 10) or 1
-                        vect = points[idx].sub(points[idx - 1])
-                        rot = FreeCAD.Rotation(FreeCAD.Vector(1,0,0),vect).toEuler()
-
-                        rotX     += rot[0]
-                        rotY     += rot[1]
-                        rotZ     += rot[2]
-
-                    plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ))
-
-                    ####
-                    if self.extrude != 0:         # extrusion characrters
-                        extrudeUp = self.extrude * self.extrudeAlignMultiplier
-                        extrudeDn = self.extrude - extrudeUp
-
-                        CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                        CharExtrude.LengthFwd = extrudeUp
-                        CharExtrude.LengthRev = extrudeDn
-                        CharExtrude.Label = string
-                        CharExtrude.Placement = plm 
-                        CharExtrude.Solid = self.CB_Solid.isChecked()
-
-                        try:
-                            CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
-                        except Exception:
-                            None
-
-                        if self.CB_BoundBox.isChecked():
-                            CharExtrude.ViewObject.BoundingBox = True
-
-                        FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
-
-                        comP.append(CharExtrude.Shape)
-                        FcString.addObject(CharExtrude)  # contener extrude
-                        self.exs.append(CharExtrude)
-                    else:                 # 
-                        ss.Placement=plm 
-                        ss.Support=None
-                        try:
-                            ss.ViewObject.DisplayMode = u"Flat Lines"
-                        except Exception:
-                            None
-
-                        if self.CB_BoundBox.isChecked():
-                            ss.ViewObject.BoundingBox = True
-
-                        comP.append(ss.Shape)
-                        FcString.addObject(ss)  # contener character
-                        self.sss.append(ss)
-                    ####
-                    if self.CB_Points.isChecked():
-                        pointRepere = Draft.makePoint(plm.Base)
-                        pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
-                        pointRepere.Label = string
-                        FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
-                        FcStringPoints.addObject(pointRepere)
-                    ####    
-                    if self.CB_Progression.isChecked():
-                        FreeCADGui.updateGui()                                 # rafraichi l'ecran
-                    ####
             except Exception:
                 FreeCAD.Console.PrintError(str("Discretize Error or selection error")+"\n")
+                return
+
+            for position in range(self.textDataLen):
+                point  = points[position * 10]
+
+                string = self.textData[position]
+                ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
+                ss.Label = string
+                Draft.autogroup(ss)
+
+                lengthX  = ss.Shape.BoundBox.XLength
+                lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
+                lengthZ  = ss.Shape.BoundBox.ZLength
+                centreX  = lengthX * self.charAlignMultipliers[0]
+                centreY  = lengthY * self.charAlignMultipliers[1]
+                centreZ  = lengthZ * self.charAlignMultipliers[2]
+                coorX    = point[0] - centreX
+                coorY    = point[1] - centreY
+                coorZ    = point[2] - centreZ
+
+                rotX     = self.inclinationX - 90.0  # The -90.0 corrects the orientation to be inline with the line
+                rotY     = self.inclinationY
+                rotZ     = self.inclinationZ
+
+                if not self.CB_Fixed_Angle.isChecked():
+                    idx = (position * 10) or 1
+                    vect = points[idx].sub(points[idx - 1])
+                    rot = FreeCAD.Rotation(FreeCAD.Vector(1,0,0),vect).toEuler()
+
+                    rotX     += rot[0]
+                    rotY     += rot[1]
+                    rotZ     += rot[2]
+
+                plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
+
+                ####
+                if self.extrude != 0:         # extrusion characrters
+                    extrudeUp = self.extrude * self.extrudeAlignMultiplier
+                    extrudeDn = self.extrude - extrudeUp
+
+                    CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
+                    CharExtrude.LengthFwd = extrudeUp
+                    CharExtrude.LengthRev = extrudeDn
+                    CharExtrude.Label = string
+                    CharExtrude.Placement = plm
+                    CharExtrude.Solid = self.CB_Solid.isChecked()
+
+                    try:
+                        CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
+                    except Exception:
+                        None
+
+                    if self.CB_BoundBox.isChecked():
+                        CharExtrude.ViewObject.BoundingBox = True
+
+                    FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
+
+                    comP.append(CharExtrude.Shape)
+                    FcString.addObject(CharExtrude)  # contener extrude
+                    self.exs.append(CharExtrude)
+                else:
+                    ss.Placement=plm
+                    ss.Support=None
+                    try:
+                        ss.ViewObject.DisplayMode = u"Flat Lines"
+                    except Exception:
+                        None
+
+                    if self.CB_BoundBox.isChecked():
+                        ss.ViewObject.BoundingBox = True
+
+                    comP.append(ss.Shape)
+                    FcString.addObject(ss)  # contener character
+                    self.sss.append(ss)
+                ####
+                if self.CB_Points.isChecked():
+                    pointRepere = Draft.makePoint(plm.Base)
+                    pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
+                    pointRepere.Label = string
+                    FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
+                    FcStringPoints.addObject(pointRepere)
+                ####
+                if self.CB_Progression.isChecked():
+                    FreeCADGui.updateGui()                                 # rafraichi l'ecran
+                ####
 
 #### Path fin
 
@@ -2210,10 +2204,10 @@ class Ui_MainWindow(QWidget):
                 zInc = 0
 
             for position in range(self.textDataLen):
-                string = self.textData[position]
                 ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
                 point  = ligne.End
 
+                string = self.textData[position]
                 ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
                 ss.Label = string
                 Draft.autogroup(ss)
@@ -2246,7 +2240,7 @@ class Ui_MainWindow(QWidget):
                     CharExtrude.LengthFwd = extrudeUp
                     CharExtrude.LengthRev = extrudeDn
                     CharExtrude.Label = string
-                    CharExtrude.Placement = plm 
+                    CharExtrude.Placement = plm
                     CharExtrude.Solid = self.CB_Solid.isChecked()
 
                     try:
@@ -2399,7 +2393,7 @@ class Ui_MainWindow(QWidget):
         FreeCAD.ParamGet(self.userParams).SetBool  ("setExtrude",               self.CB_Extrude.isChecked())
         FreeCAD.ParamGet(self.userParams).SetFloat ("extrude",                  self.DS_Extrude.value())
 
-        FreeCAD.ParamGet(self.userParams).SetBool  ("setPlacement",             self.CB_Sp_Placement.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetBool  ("setPlacement",             self.CB_Placement.isChecked())
         FreeCAD.ParamGet(self.userParams).SetFloat ("PlacementX",               self.DS_PlacementX.value())
         FreeCAD.ParamGet(self.userParams).SetFloat ("PlacementY",               self.DS_PlacementY.value())
         FreeCAD.ParamGet(self.userParams).SetFloat ("PlacementZ",               self.DS_PlacementZ.value())
@@ -2480,8 +2474,8 @@ class Ui_MainWindow(QWidget):
             self.GB_Extrude_Align.setEnabled(extrude)
             self.CB_Solid.setEnabled(extrude)
 
-            placement                             = FreeCAD.ParamGet(self.userParams).GetBool   ("setPlacement",            self.CB_Sp_Placement.isChecked())
-            self.CB_Sp_Placement.setChecked(placement)                                                                  
+            placement                             = FreeCAD.ParamGet(self.userParams).GetBool   ("setPlacement",            self.CB_Placement.isChecked())
+            self.CB_Placement.setChecked(placement)
             self.DS_PlacementX          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("PlacementX",              self.DS_PlacementX.value()))
             self.DS_PlacementY          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("PlacementY",              self.DS_PlacementY.value()))
             self.DS_PlacementZ          .setValue  (FreeCAD.ParamGet(self.userParams).GetFloat  ("PlacementZ",              self.DS_PlacementZ.value()))
@@ -2541,11 +2535,11 @@ class SelObserver:
                     ui.PlacementX = position[0]
                     ui.PlacementY = position[1]
                     ui.PlacementZ = position[2]
-                    ui.CB_Sp_Placement.setChecked(True)
+                    ui.CB_Placement.setChecked(True)
                     ui.DS_PlacementX.setValue(PlacementX)
                     ui.DS_PlacementY.setValue(PlacementY)
                     ui.DS_PlacementZ.setValue(PlacementZ)
-                    ui.on_CB_Sp_Placement()
+                    ui.on_CB_Placement()
             else:
                 ui.DS_Radius_Circle.setEnabled(False)
                 ui.DS_Radius_Circle.setStyleSheet("background-color: #F8E0E0;")
