@@ -962,6 +962,7 @@ class Ui_MainWindow(QWidget):
 
         #### Tabbed area
         self.TW_Config = QtWidgets.QTabWidget()
+        self.TW_Config.currentChanged.connect(self.on_TW_Config)
 
         #### Configuration Tab
         ## Presets area
@@ -1683,6 +1684,9 @@ class Ui_MainWindow(QWidget):
 #        FreeCAD.Console.PrintMessage(str(self.index) + " , " + self.tableau[self.index][1] + " , " + self.tableau[self.index][2] + " , ' " + famille + "' , ' " + typeCar + " ' \n")
     #### matplotlib fin 5/5 #################################################################
 
+    def on_TW_Config(self,idx):
+        print("on_TW_Config",idx,self.TW_Config.tabText(idx))
+
     def update_lineEdit_NameFile(self):
         try:
             self.lineEdit_NameFile.setText("(" + str(self.index + 1) + "/" + str(len(self.tableau)) + ") " + self.tableau[self.index][1])
@@ -2086,15 +2090,18 @@ class Ui_MainWindow(QWidget):
         try:
             ssel = FreeCADGui.Selection.getSelectionEx()
             selectedEdge = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]  # select one element
+            if (hasattr(selectedEdge,'Surface')) or (hasattr(selectedEdge,'Point')):
+                ssel = []
         except Exception:
+            ssel = []
             selectedEdge = None
-            None
-        passNoOk = 0
-        if (hasattr(selectedEdge,'Surface')) or (hasattr(selectedEdge,'Point')):
-            passNoOk = 1
 
-        if (len(ssel) != 0) and (passNoOk == 0):            
-            numberOfPoints = ((self.textDataLen - 1) * 10) + 1
+        points = []
+        rots = []
+        if len(ssel):
+            #### Calculate points along selected line
+            posMultiplier = 10
+            numberOfPoints = ((self.textDataLen - 1) * posMultiplier) + 1
 
             try:
                 points = selectedEdge.discretize(numberOfPoints)    # discretize the element
@@ -2103,98 +2110,26 @@ class Ui_MainWindow(QWidget):
                 return
 
             for position in range(self.textDataLen):
-                point  = points[position * 10]
-
-                string = self.textData[position]
-                ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
-                ss.Label = string
-                Draft.autogroup(ss)
-
-                lengthX  = ss.Shape.BoundBox.XLength
-                lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
-                lengthZ  = ss.Shape.BoundBox.ZLength
-                centreX  = lengthX * self.charAlignMultipliers[0]
-                centreY  = lengthY * self.charAlignMultipliers[1]
-                centreZ  = lengthZ * self.charAlignMultipliers[2]
-                coorX    = point[0] - centreX
-                coorY    = point[1] - centreY
-                coorZ    = point[2] - centreZ
-
-                rotX     = self.inclinationX - 90.0  # The -90.0 corrects the orientation to be inline with the line
-                rotY     = self.inclinationY
-                rotZ     = self.inclinationZ
-
+                rotX = self.inclinationX - 90.0
+                rotY = self.inclinationY
+                rotZ = self.inclinationZ
                 if not self.CB_Fixed_Angle.isChecked():
-                    idx = (position * 10) or 1
+                    idx = (position * posMultiplier) or 1
                     vect = points[idx].sub(points[idx - 1])
                     rot = FreeCAD.Rotation(FreeCAD.Vector(1,0,0),vect).toEuler()
 
-                    rotX     += rot[0]
-                    rotY     += rot[1]
-                    rotZ     += rot[2]
+                    rotX += rot[0]
+                    rotY += rot[1]
+                    rotZ += rot[2]
 
-                plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
-
-                ####
-                if self.extrude != 0:         # extrusion characrters
-                    extrudeUp = self.extrude * self.extrudeAlignMultiplier
-                    extrudeDn = self.extrude - extrudeUp
-
-                    CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                    CharExtrude.LengthFwd = extrudeUp
-                    CharExtrude.LengthRev = extrudeDn
-                    CharExtrude.Label = string
-                    CharExtrude.Placement = plm
-                    CharExtrude.Solid = self.CB_Solid.isChecked()
-
-                    try:
-                        CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
-                    except Exception:
-                        None
-
-                    if self.CB_BoundBox.isChecked():
-                        CharExtrude.ViewObject.BoundingBox = True
-
-                    FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
-
-                    comP.append(CharExtrude.Shape)
-                    FcString.addObject(CharExtrude)  # contener extrude
-                    self.exs.append(CharExtrude)
-                else:
-                    ss.Placement=plm
-                    ss.Support=None
-                    try:
-                        ss.ViewObject.DisplayMode = u"Flat Lines"
-                    except Exception:
-                        None
-
-                    if self.CB_BoundBox.isChecked():
-                        ss.ViewObject.BoundingBox = True
-
-                    comP.append(ss.Shape)
-                    FcString.addObject(ss)  # contener character
-                    self.sss.append(ss)
-                ####
-                if self.CB_Points.isChecked():
-                    pointRepere = Draft.makePoint(plm.Base)
-                    pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
-                    pointRepere.Label = string
-                    FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
-                    FcStringPoints.addObject(pointRepere)
-                ####
-                if self.CB_Progression.isChecked():
-                    FreeCADGui.updateGui()                                 # rafraichi l'ecran
-                ####
-
-#### Path fin
+                rots.append([rotX, rotY, rotZ])
 
         else:
+            #### Calculate points around a circle/helix
+            posMultiplier = 1
             vecligne=[FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ),FreeCAD.Vector(self.radius,0.0,0.0)]      # 
             ligne = Draft.makeWire(vecligne,closed=False,face=False,support=None)     # creation de la ligne de base
             lineName = ligne.Name
-    
-            angleTr = self.beginAngle
-            coorZ = self.PlacementZ + self.helixBase
 
             if self.textDataLen > 1:
                 angleInc = (self.endAngle - self.beginAngle)/(self.textDataLen - 1)
@@ -2203,91 +2138,96 @@ class Ui_MainWindow(QWidget):
                 angleInc = 0
                 zInc = 0
 
+            angleTr = self.beginAngle
             for position in range(self.textDataLen):
-                ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
-                point  = ligne.End
-
-                string = self.textData[position]
-                ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
-                ss.Label = string
-                Draft.autogroup(ss)
-
-                lengthX  = ss.Shape.BoundBox.XLength
-                lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
-                lengthZ  = ss.Shape.BoundBox.ZLength
-                centreX  = lengthX * self.charAlignMultipliers[0]
-                centreY  = lengthY * self.charAlignMultipliers[1]
-                centreZ  = lengthZ * self.charAlignMultipliers[2]
-                coorX    = point[0] - centreX
-                coorY    = point[1] - centreY
-                #coorZ    = point[2] - centreZ
-
-                rotX     = self.inclinationX - 180.0  # The -180.0 corrects the orientation to be inline with the circle/helix
-                rotY     = self.inclinationY
-                rotZ     = self.inclinationZ
-
+                ligne.Placement = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ + self.helixBase + position * zInc), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),angleTr), FreeCAD.Vector(0,0,0))
+                points.append(ligne.End)
+                rotX = self.inclinationX - 180.0
+                rotY = self.inclinationY
+                rotZ = self.inclinationZ
                 if not self.CB_Fixed_Angle.isChecked():
                     rotX += angleTr
 
-                plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
-
-                ####
-                if self.extrude != 0:         # extrusion characrters
-                    extrudeUp = self.extrude * self.extrudeAlignMultiplier
-                    extrudeDn = self.extrude - extrudeUp
-
-                    CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
-                    CharExtrude.LengthFwd = extrudeUp
-                    CharExtrude.LengthRev = extrudeDn
-                    CharExtrude.Label = string
-                    CharExtrude.Placement = plm
-                    CharExtrude.Solid = self.CB_Solid.isChecked()
-
-                    try:
-                        CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
-                    except Exception:
-                        None
-
-                    if self.CB_BoundBox.isChecked():
-                        CharExtrude.ViewObject.BoundingBox = True
-
-                    FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
-
-                    comP.append(CharExtrude.Shape)
-                    FcString.addObject(CharExtrude)  # contener extrude
-                    self.exs.append(CharExtrude)
-                else:                 # 
-                    ss.Placement=plm 
-                    ss.Support=None
-                    try:
-                        ss.ViewObject.DisplayMode = u"Flat Lines"
-                    except Exception:
-                        None
-
-                    if self.CB_BoundBox.isChecked():
-                        ss.ViewObject.BoundingBox = True
-
-                    comP.append(ss.Shape)
-                    FcString.addObject(ss)  # contener character
-                    self.sss.append(ss)
-                ####
-                if self.CB_Points.isChecked():
-                    pointRepere = Draft.makePoint(plm.Base)
-                    pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
-                    pointRepere.Label = string
-                    FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
-                    FcStringPoints.addObject(pointRepere)
-                ####    
-                if self.CB_Progression.isChecked():
-                    FreeCADGui.updateGui()                                 # rafraichi l'ecran
-                ####
+                rots.append([rotX, rotY, rotZ])
 
                 angleTr += angleInc
-                coorZ   += zInc
 
-            #BSpline = Draft.makeBSpline(points,closed=False)                  # makeBSpline repere
             FreeCAD.ActiveDocument.removeObject(lineName)     # remove ligne de base directrice
 
+        #### Create and place the strings
+        for position in range(self.textDataLen):
+            coorX, coorY, coorZ = points[position * posMultiplier]
+            rotX, rotY, rotZ = rots[position]
+
+            string = self.textData[position]
+            ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
+            ss.Label = string
+            Draft.autogroup(ss)
+
+            lengthX  = ss.Shape.BoundBox.XLength
+            lengthY  = self.characterSize / self.fontMetrics.height() * self.fontMetrics.ascent()
+            lengthZ  = ss.Shape.BoundBox.ZLength
+            centreX  = lengthX * self.charAlignMultipliers[0]
+            centreY  = lengthY * self.charAlignMultipliers[1]
+            centreZ  = lengthZ * self.charAlignMultipliers[2]
+            coorX    -= centreX
+            coorY    -= centreY
+            coorZ    -= centreZ
+
+            plm = FreeCAD.Placement(FreeCAD.Vector(coorX,coorY,coorZ), FreeCAD.Rotation(rotX,rotY,rotZ), FreeCAD.Vector(centreX,centreY,centreZ)) # pitch,roll...1
+
+            ####
+            if self.extrude != 0:         # extrusion characrters
+                extrudeUp = self.extrude * self.extrudeAlignMultiplier
+                extrudeDn = self.extrude - extrudeUp
+
+                CharExtrude = Draft.extrude(ss,Base.Vector(0,0,self.extrude))
+                CharExtrude.LengthFwd = extrudeUp
+                CharExtrude.LengthRev = extrudeDn
+                CharExtrude.Label = string
+                CharExtrude.Placement = plm
+                CharExtrude.Solid = self.CB_Solid.isChecked()
+
+                try:
+                    CharExtrude.ViewObject.DisplayMode = u"Flat Lines"
+                except Exception:
+                    None
+
+                if self.CB_BoundBox.isChecked():
+                    CharExtrude.ViewObject.BoundingBox = True
+
+                FreeCAD.ActiveDocument.getObject(CharExtrude.Name).recompute()
+
+                comP.append(CharExtrude.Shape)
+                FcString.addObject(CharExtrude)  # contener extrude
+                self.exs.append(CharExtrude)
+            else:
+                ss.Placement=plm
+                ss.Support=None
+                try:
+                    ss.ViewObject.DisplayMode = u"Flat Lines"
+                except Exception:
+                    None
+
+                if self.CB_BoundBox.isChecked():
+                    ss.ViewObject.BoundingBox = True
+
+                comP.append(ss.Shape)
+                FcString.addObject(ss)  # contener character
+                self.sss.append(ss)
+            ####
+            if self.CB_Points.isChecked():
+                pointRepere = Draft.makePoint(plm.Base)
+                pointRepere.ViewObject.PointColor = (1.0,0.0,0.0)
+                pointRepere.Label = string
+                FreeCAD.ActiveDocument.getObject(pointRepere.Name).recompute()
+                FcStringPoints.addObject(pointRepere)
+            ####
+            if self.CB_Progression.isChecked():
+                FreeCADGui.updateGui()                                 # rafraichi l'ecran
+            ####
+
+        #### Add reference circle
         if (self.CB_Circle.isChecked()) and (passNoOk == 0):
             plm = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),0), FreeCAD.Vector(0,0,0))
             circle = Draft.makeCircle(radius=self.radius, placement=plm, face=False, support=None)
@@ -2295,12 +2235,12 @@ class Ui_MainWindow(QWidget):
             circle.ViewObject.LineColor = (1.0,0.,0.0)
             Draft.autogroup(circle)
 
+        #### Create compound
         if self.compound == 1:                            # create compount
             comp = Part.makeCompound(comP)
             Part.show(comp)
-        ####Boucle de travail fin########################################################################
 
-        ####Extrude support clock#############################################
+        #### Extrude support
         if self.nombreFaces > 0:                           # support clock
             plm = FreeCAD.Placement()
             plm.Base = FreeCAD.Vector(0.0,0.0,0.0)
@@ -2526,20 +2466,22 @@ class Ui_MainWindow(QWidget):
 ##################################################################################################
 class SelObserver:
     def addSelection(self, document, object, element, position):  # Selection
-        global ui        
+        global ui
+        print("addSelection",position)
 
         try:
             selectedEdge = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]  # select one subElement
+            print(selectedEdge.__dict__)
             if (hasattr(selectedEdge,'Surface')) or (hasattr(selectedEdge,'Point')):
                 if (hasattr(selectedEdge,'Point')):
                     ui.PlacementX = position[0]
                     ui.PlacementY = position[1]
                     ui.PlacementZ = position[2]
                     ui.CB_Placement.setChecked(True)
-                    ui.DS_PlacementX.setValue(PlacementX)
-                    ui.DS_PlacementY.setValue(PlacementY)
-                    ui.DS_PlacementZ.setValue(PlacementZ)
-                    ui.on_CB_Placement()
+                    ui.on_CB_Placement(True)
+                    ui.DS_PlacementX.setValue(ui.PlacementX)
+                    ui.DS_PlacementY.setValue(ui.PlacementY)
+                    ui.DS_PlacementZ.setValue(ui.PlacementZ)
             else:
                 ui.DS_Radius_Circle.setEnabled(False)
                 ui.DS_Radius_Circle.setStyleSheet("background-color: #F8E0E0;")
@@ -2547,33 +2489,34 @@ class SelObserver:
                 ui.DS_Begin_Angle.setStyleSheet("background-color: #F8E0E0;")
                 ui.DS_End_Angle.setEnabled(False)
                 ui.DS_End_Angle.setStyleSheet("background-color: #F8E0E0;")
-                #ui.CB_Circle.setChecked(False)
-                #ui.CB_Circle.setEnabled(False)
-                #ui.CB_Circle.setStyleSheet("background-color: #F8E0E0;")
+                ui.CB_Circle.setChecked(False)
+                ui.CB_Circle.setEnabled(False)
+                ui.CB_Circle.setStyleSheet("background-color: #F8E0E0;")
         except Exception:
             pass
-            #selectedEdge = None
-            #None
 
-##    def setPreselection(self,doc,obj,sub):             # preselection
-##        print "setPreselection"
-##    def removeSelection(self,doc,obj,sub):             # Effacer l'objet selectionne
-##        print "removeSelection"
-##    def setSelection(self,doc):                        # Selection dans ComboView
-##        print "SelObserver quit macro"
+#    def setPreselection(self,doc,obj,sub):             # preselection
+#        print("setPreselection")
+#
+#    def removeSelection(self,doc,obj,sub):             # Effacer l'objet selectionne
+#        print("removeSelection")
+#
+#    def setSelection(self,doc):                        # Selection dans ComboView
+#        print("SelObserver quit macro")
+
     def clearSelection(self,doc):                      # Si clic sur l'ecran, effacer la selection
-        try:
-            ui.on_PB_Reset_Placement()
-            ui.DS_Radius_Circle.setEnabled(True)
-            ui.DS_Radius_Circle.setStyleSheet("Base")
-            ui.DS_Begin_Angle.setEnabled(True)
-            ui.DS_Begin_Angle.setStyleSheet("Base")
-            ui.DS_End_Angle.setEnabled(True)
-            ui.DS_End_Angle.setStyleSheet("Base")
-            #ui.CB_Circle.setEnabled(True)
-            #ui.CB_Circle.setStyleSheet("Base")
-        except Exception:
-            pass
+        #print("clearSelection")
+
+        #ui.CB_Placement.setChecked(False)
+        #ui.on_CB_Placement(False)
+        ui.DS_Radius_Circle.setEnabled(True)
+        ui.DS_Radius_Circle.setStyleSheet("Base")
+        ui.DS_Begin_Angle.setEnabled(True)
+        ui.DS_Begin_Angle.setStyleSheet("Base")
+        ui.DS_End_Angle.setEnabled(True)
+        ui.DS_End_Angle.setStyleSheet("Base")
+        ui.CB_Circle.setEnabled(True)
+        ui.CB_Circle.setStyleSheet("Base")
 
 s=SelObserver()
 FreeCADGui.Selection.addObserver(s)                    # installe la fonction en mode resident
