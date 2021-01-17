@@ -2452,7 +2452,6 @@ class SelObserver:
 
         try:
             selectedEdge = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]  # select one subElement
-            print(selectedEdge.__dict__)
             if (hasattr(selectedEdge,'Surface')) or (hasattr(selectedEdge,'Point')):
                 if (hasattr(selectedEdge,'Point')):
                     ui.PlacementX = position[0]
