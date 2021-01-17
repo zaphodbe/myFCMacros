@@ -1997,25 +1997,6 @@ class Ui_MainWindow(QWidget):
 
     def on_DS_Extrude_Support(self,value):     #  Clock
         self.extrudeSupport = value
-        #if self.extrudeSupport >= extrude:
-        #    if self.CB_Extrude.isChecked():
-        #        self.DS_Extrude.setStyleSheet("background-color: rgb(224, 0, 0)")
-        #        self.DS_Extrude_Support.setStyleSheet("background-color: rgb(224, 0, 0)")
-        #        self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-        #    else:
-        #        self.DS_Extrude.setStyleSheet("background-color: rgb(255, 165, 0)")
-        #        self.DS_Extrude_Support.setStyleSheet("background-color: rgb(255, 165, 0)")
-        #        self.CB_Extrude.setStyleSheet("background-color: rgb(255, 165, 0)")
-        #else:
-        #    self.DS_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-        #    self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
-        #    self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-        #if self.extrudeSupport == 0:
-        #    self.DS_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-        #    self.DS_Extrude_Support.setStyleSheet("background-color: QPalette.Base") # origin system
-        #    self.CB_Extrude.setStyleSheet("background-color: QPalette.Base") # origin system
-        #
-        #self.DS_PlacementZ.setEnabled(True)
 
     def on_DS_Rotate_Support(self,value):
         self.rotateSupport = value
@@ -2228,7 +2209,7 @@ class Ui_MainWindow(QWidget):
             ####
 
         #### Add reference circle
-        if (self.CB_Circle.isChecked()) and (passNoOk == 0):
+        if self.CB_Circle.isChecked() and not len(ssel):
             plm = FreeCAD.Placement(FreeCAD.Vector(self.PlacementX,self.PlacementY,self.PlacementZ), FreeCAD.Rotation(FreeCAD.Vector(0,0,1),0), FreeCAD.Vector(0,0,0))
             circle = Draft.makeCircle(radius=self.radius, placement=plm, face=False, support=None)
             circle.Label = self.textLabel
@@ -2467,7 +2448,7 @@ class Ui_MainWindow(QWidget):
 class SelObserver:
     def addSelection(self, document, object, element, position):  # Selection
         global ui
-        print("addSelection",position)
+        #print("addSelection",position)
 
         try:
             selectedEdge = FreeCADGui.Selection.getSelectionEx()[0].SubObjects[0]  # select one subElement
