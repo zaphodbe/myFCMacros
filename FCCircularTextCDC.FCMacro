@@ -945,9 +945,11 @@ class Ui_MainWindow(QWidget):
         self.PB_Reverse = QtWidgets.QPushButton()
         self.PB_Reverse.clicked.connect(self.on_PB_Reverse)
 
-        self.CB_Word = QtWidgets.QCheckBox(self.GB_Text)
-        self.CB_Word.setText(_fromUtf8("Word"))
-        self.CB_Word.clicked.connect(self.on_TE_Changed)
+        self.CB_Split = QtWidgets.QComboBox()
+        self.CB_Split.addItem(_fromUtf8("By Character"),'')
+        self.CB_Split.addItem(_fromUtf8("By Word"),' ')
+        self.CB_Split.addItem(_fromUtf8("By Line"),'\n')
+        self.CB_Split.activated.connect(self.on_TE_Changed)
 
         self.PB_Help = QtWidgets.QPushButton(MainWindow)
         self.PB_Help.setIcon(QtGui.QIcon(QtGui.QPixmap(helpIcon)))      # help icone dans une variable
@@ -1273,7 +1275,7 @@ class Ui_MainWindow(QWidget):
         self.GL_frame_Option = QtWidgets.QGridLayout(self.frame_Option)
         self.GL_frame_Option.setContentsMargins(10, 10, 10, 10)
         self.GL_frame_Option.addWidget(self.PB_Reverse, 0, 0, 1, 1)
-        self.GL_frame_Option.addWidget(self.CB_Word, 1, 0, 1, 1)
+        self.GL_frame_Option.addWidget(self.CB_Split, 1, 0, 1, 1)
         self.GL_Text.addWidget(self.frame_Option, 0, 1, 2, 1)
         ##
         self.GL_Text.addWidget(self.lineEdit_NameFile,1, 0, 1, 1)#_Font
@@ -1421,9 +1423,12 @@ class Ui_MainWindow(QWidget):
         self.PB_Reverse.setText(_fromUtf8("Reverse"))
         self.PB_Reverse.setToolTip(_fromUtf8("Reverse the text edited"))
 
-        self.CB_Word.setText(_fromUtf8("Word"))
-        self.CB_Word.setToolTip(_fromUtf8("If Word is checked, the text are clipped to each space" + "\n"
-                                          "one space egual one character." + "\n\n"
+        self.CB_Split.setItemText(0,_fromUtf8("By Character"))
+        self.CB_Split.setItemText(1,_fromUtf8("By Word"))
+        self.CB_Split.setItemText(2,_fromUtf8("By Line"))
+        self.CB_Split.setToolTip(_fromUtf8("If Word is selected, the text is split at each space.\n"
+                                          "If Line is selected, the text is split by lines.\n"
+                                          "Otherwise each character is used.\n\n"
                                           "If in mode Path you work with a circle," + "\n"
                                           "the last character superpose de first character ! " + "\n"
                                           "you must adding one space after the last character" + "\n"
@@ -1722,7 +1727,12 @@ class Ui_MainWindow(QWidget):
         except Exception:
             selectedEdge = ""
 
-        if self.CB_Word.isChecked():
+        if self.CB_Split.currentData() == '\n':
+            self.textData = self.text.split("\n")
+            self.textLabel = self.textData[0]
+            self.textDataLen = len(self.textData)
+            mot = "line"
+        elif self.CB_Split.currentData() == ' ':
             self.textData = self.text.split(" ")
             self.textLabel = self.textData[0]
             self.textDataLen = len(self.textData)
@@ -1748,20 +1758,29 @@ class Ui_MainWindow(QWidget):
             self.GB_Text.setTitle("Text to be displayed  ( "+str(self.textDataLen)+ " " + mot + " ) ( " + str(spaces) + " " + espace + " )")
 
     def on_PB_Reverse(self):        #connection Reverse
-        self.text = self.TE_Text.toPlainText()
-        self.text = self.text[::-1]
-        self.TE_Text.setText(_fromUtf8(self.text))
+        data = self.textData[::-1]
+
+        if self.CB_Split.currentData() == '\n':
+            text = '\n'.join(data)
+        elif self.CB_Split.currentData() == ' ':
+            text = ' '.join(data)
+        else:
+            text = data
+
+        self.TE_Text.setText(_fromUtf8(text))
         self.TE_Text.repaint()
+        self.on_TE_Changed()
 
     def on_PB_Clock(self,text=None):
         if text is not None:
             self.TE_Text.setText(_fromUtf8(text))
         self.DS_Begin_Angle.setValue(60.0)
         self.DS_End_Angle.setValue(-270.0)
-        self.CB_Word.setChecked(True)
+        self.CB_Split.setCurrentIndex(1)
         self.RB_Top_Mid.setChecked(True)
         self.RB_Extrude_Back.setChecked(True)
         self.GB_Main.repaint()
+        self.on_TE_Changed()
 
     def on_PB_ClockArabic(self):
         self.on_PB_Clock("1 2 3 4 5 6 7 8 9 10 11 12")
@@ -2006,7 +2025,7 @@ class Ui_MainWindow(QWidget):
 
         self.TE_Text.setText(_fromUtf8(self.text))
 
-        self.CB_Word.setChecked(False)
+        self.CB_Split.setCurrentIndex(0)
 
         self.DS_Size_Character.setValue(self.characterSize)
         self.DS_Radius_Circle.setValue(self.radius)
@@ -2297,7 +2316,7 @@ class Ui_MainWindow(QWidget):
 
         FreeCAD.ParamGet(self.userParams).SetString("text",                     self.TE_Text.toPlainText())
         FreeCAD.ParamGet(self.userParams).SetString("fontName",                 self.fontName)
-        FreeCAD.ParamGet(self.userParams).SetBool  ("byWord",                   self.CB_Word.isChecked())
+        FreeCAD.ParamGet(self.userParams).SetInt   ("split",                    self.CB_Split.currentIndex())
 
         FreeCAD.ParamGet(self.userParams).SetBool  ("fixedAngle",               self.CB_Fixed_Angle.isChecked())
 
@@ -2371,7 +2390,7 @@ class Ui_MainWindow(QWidget):
             self.TE_Text         .setText(_fromUtf8(FreeCAD.ParamGet(self.userParams).GetString ("text",                    self.TE_Text.toPlainText())))
             self.fontName                         = FreeCAD.ParamGet(self.userParams).GetString ("fontName",                self.fontName)
             self.searchFont(self.fontDir,self.fontName)                                                                     
-            self.CB_Word                .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("byWord",                  self.CB_Word.isChecked()))
+            self.CB_Split               .setCurrentIndex(FreeCAD.ParamGet(self.userParams).GetInt   ("split",               self.CB_Split.currentIndex()))
 
             self.CB_Fixed_Angle         .setChecked(FreeCAD.ParamGet(self.userParams).GetBool   ("fixedAngle",              self.CB_Fixed_Angle.isChecked()))
 
