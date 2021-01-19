@@ -1965,7 +1965,7 @@ class Ui_MainWindow(QWidget):
         self.DS_Rotate_Support.setEnabled(value)
 
         if value:
-            self.DS_Extrude_Support.setValue(1.0)
+            self.DS_Extrude_Support.setValue(-1.0)
             self.DS_Rotate_Support.setValue(0.0)
             self.DS_Radius_Support.setValue(self.DS_Radius_Circle.value())
             self.S_Number_Faces_Support.setValue(1)
@@ -2141,6 +2141,8 @@ class Ui_MainWindow(QWidget):
             rotX, rotY, rotZ = rots[position]
 
             string = self.textData[position]
+            if string == ' ':
+                continue
             ss=Draft.makeShapeString(String=string,FontFile=self.fontFullPath,Size=self.characterSize,Tracking=0)
             ss.Label = string
             Draft.autogroup(ss)
@@ -2240,7 +2242,7 @@ class Ui_MainWindow(QWidget):
             FcString.addObject(supp)                  # contener support
 
             if self.extrudeSupport != 0:                        # extrude support clock
-                suppExtrude = Draft.extrude(supp,Base.Vector(0,0,-self.extrudeSupport))
+                suppExtrude = Draft.extrude(supp,Base.Vector(0,0,self.extrudeSupport))
                 suppExtrude.Placement = plm
                 suppExtrude.Solid = self.CB_Solid.isChecked()
 
